@@ -1,8 +1,13 @@
 package Game1.Controllers;
 
 
-import java.io.*;
 
+import java.io.*;
+import java.util.List;
+
+import Game1.AI.BFSolver;
+import Game1.AI.MoveInfo;
+import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
 import Game1.views.GameFrame;
@@ -184,8 +189,42 @@ public class GameController  {
     }
 
 
+    //AI相关
+    //bfs求解
+    public void autoSolve() {
+        new SwingWorker<Void, Void>() {
+            List<MoveInfo> solution;
 
+            @Override
+            protected Void doInBackground() {
+                solution = BFSolver.findSolution(board);
+                return null;
+            }
 
+            @Override
+            protected void done() {
+
+                if (solution != null && !solution.isEmpty()) {
+                    new Thread(() -> {
+
+                        for (MoveInfo move : solution) {
+                            SwingUtilities.invokeLater(() -> {      //抓到要移动的block和移动方向
+                                Block target = board.getBlocks().get(move.blockIndex);
+                                gameframe.setSelectedBlock(target);
+                                moveBlock(move.direction);
+                            });
+
+                            try {
+                                Thread.sleep(500);      //每移动一步的休息时间
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    }).start();
+                }
+            }
+        }.execute();
+    }
 
 
 

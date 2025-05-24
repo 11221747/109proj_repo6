@@ -95,6 +95,15 @@ public class GameFrame extends JFrame {
         timeBar.setStringPainted(true);
         add(timeBar, BorderLayout.NORTH);
 
+        //AI求解相关
+        JButton aiSolveBtn = new JButton("AI solver");
+        aiSolveBtn.addActionListener(e -> {
+            controller.autoSolve();
+        });
+        controlPanel.add(aiSolveBtn);       //这前端这样写对吗  todo
+
+        add(controlPanel, BorderLayout.SOUTH);
+
 
         controlPanel.add(upButton);
         controlPanel.add(downButton);
@@ -104,8 +113,6 @@ public class GameFrame extends JFrame {
         controlPanel.add(saveButton);
         controlPanel.add(loadButton);
         controlPanel.add(undoButton);
-
-        add(controlPanel, BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(null);
