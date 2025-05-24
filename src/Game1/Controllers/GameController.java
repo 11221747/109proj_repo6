@@ -1,8 +1,14 @@
 package Game1.Controllers;
 
 
-import java.io.*;
 
+import java.io.*;
+import java.util.List;
+
+
+import Game1.AI.AStarSolver;
+import Game1.AI.MoveInfo;
+import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
 import Game1.views.GameFrame;
@@ -24,7 +30,7 @@ public class GameController  {
     private boolean isTimerEnabled = false; // 是否启用倒计时
     private boolean firstMove_done = false;
 
-
+    private MusicPlayer musicPlayer;
 
     private GameFrame gameframe;
 
@@ -39,7 +45,7 @@ public class GameController  {
     //构造方法和设置用户
     public GameController() {
         this.board = new Board();
-
+        this.musicPlayer = new MusicPlayer();
     }
 
 
@@ -53,6 +59,9 @@ public class GameController  {
             setFirstMove_done(true);
         }
 
+
+        //可以move了之后
+        musicPlayer.play("data/bubble.wav",false);
         getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
         gameframe.repaint();
 
@@ -178,8 +187,47 @@ public class GameController  {
     }
 
 
+    //AI相关
+    // AI 自动求解
+    public void autoSolve() {
+        new SwingWorker<List<MoveInfo>, Void>() {
+            @Override
+            protected List<MoveInfo> doInBackground() {
+                // 使用 A* 求解
+                List<MoveInfo> solution = AStarSolver.solve(board);
+                System.out.println("AI solution length: " + solution.size());
+                return solution;
+            }
 
-
+            @Override
+            protected void done() {
+                try {
+                    List<MoveInfo> solution = get();
+                    if (solution == null || solution.isEmpty()) {
+                        System.out.println("No solution found or empty list.");
+                        return;
+                    }
+                    // 执行动画
+                    new Thread(() -> {
+                        for (MoveInfo move : solution) {
+                            SwingUtilities.invokeLater(() -> {
+                                Block target = board.getBlocks().get(move.blockIndex);
+                                gameframe.setSelectedBlock(target);
+                                moveBlock(move.direction);
+                            });
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    }).start();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
+    }
 
 
 

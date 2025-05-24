@@ -13,54 +13,68 @@ import java.util.*;
 public class BFSolver {
     private static class StateNode {
         final Board board;
-        final Board.Direction move;
+        final MoveInfo move;
         final StateNode parent;
+        final int depth;
 
-        StateNode(Board board, Board.Direction move, StateNode parent) {
+        StateNode(Board board, MoveInfo move, StateNode parent, int depth) {
             this.board = deepCopy(board);
             this.move = move;
             this.parent = parent;
+            this.depth = depth;
         }
 
-        // 生成唯一状态标识
+
         String getStateKey() {
+            List<Block> sortedBlocks = new ArrayList<>(board.getBlocks());
+            sortedBlocks.sort(Comparator.comparingInt(Block::getY)
+                    .thenComparingInt(Block::getX)
+                    .thenComparing(Block::getType));
             StringBuilder sb = new StringBuilder();
-            for (Block block : board.getBlocks()) {
-                sb.append(block.getType()).append(":")
-                        .append(block.getX()).append(",")
-                        .append(block.getY()).append("|");
+            for (Block block : sortedBlocks) {
+                sb.append(block.getX()).append(",")
+                        .append(block.getY()).append(";");
             }
             return sb.toString();
         }
     }
 
-    public static List<Board.Direction> findSolution(Board initialBoard) {
+    public static List<MoveInfo> findSolution(Board initialBoard) {
         Queue<StateNode> queue = new LinkedList<>();
-        Set<String> visited = new HashSet<>();
+        Map<String, Integer> visited = new HashMap<>();
 
         // 初始状态
-        queue.add(new StateNode(initialBoard, null, null));
-        visited.add(queue.peek().getStateKey());
+        queue.add(new StateNode(initialBoard, null, null, 0));
+        visited.put(queue.peek().getStateKey(), 0);
 
         while (!queue.isEmpty()) {
             StateNode current = queue.poll();
 
-            // 胜利条件检查
             if (current.board.isWin()) {
                 return buildSolution(current);
             }
 
-            // 生成所有可能的移动
-            for (Block block : current.board.getBlocks()) {
+            // 遍历所有方块
+            List<Block> blocks = current.board.getBlocks();
+            for (int i = 0; i < blocks.size(); i++) {
+                Block block = blocks.get(i);
+
+                // 尝试所有方向
                 for (Board.Direction dir : Board.Direction.values()) {
-                    Board newBoard = deepCopy(current.board);
-                    Block newBlock = findCorrespondingBlock(newBoard, block);
+                    if (current.board.canMove(block, dir)) {
+                        Board newBoard = deepCopy(current.board);
+                        Block newBlock = newBoard.getBlocks().get(i);
 
-                    if (newBoard.canMove(newBlock, dir)) {
                         newBoard.moveBlock(newBlock, dir);
+                        StateNode newNode = new StateNode(newBoard,
+                                new MoveInfo(i, dir), current, current.depth + 1);
 
-                        StateNode newNode = new StateNode(newBoard, dir, current);
-                        if (visited.add(newNode.getStateKey())) {
+                        String key = newNode.getStateKey();
+                        Integer existDepth = visited.get(key);
+
+                        // 仅当新状态深度更低时才加入队列
+                        if (existDepth == null || existDepth > newNode.depth) {
+                            visited.put(key, newNode.depth);
                             queue.add(newNode);
                         }
                     }
@@ -70,8 +84,8 @@ public class BFSolver {
         return Collections.emptyList();
     }
 
-    private static List<Board.Direction> buildSolution(StateNode node) {
-        LinkedList<Board.Direction> solution = new LinkedList<>();
+    private static List<MoveInfo> buildSolution(StateNode node) {
+        LinkedList<MoveInfo> solution = new LinkedList<>();
         while (node.parent != null) {
             solution.addFirst(node.move);
             node = node.parent;
@@ -79,7 +93,7 @@ public class BFSolver {
         return solution;
     }
 
-    // 深度拷贝Board（基于您的序列化方案）
+    // 深度拷贝Board
     private static Board deepCopy(Board original) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -89,13 +103,21 @@ public class BFSolver {
             ByteArrayInputStream bais =
                     new ByteArrayInputStream(baos.toByteArray());
             ObjectInputStream ois = new ObjectInputStream(bais);
+
             return (Board) ois.readObject();
         } catch (Exception e) {
             throw new RuntimeException("Deep copy failed", e);
         }
     }
 
-    // 在复制后的Board中找到对应的Block
+
+
+
+
+
+
+
+    // 在复制后的Board中找到对应的Block    暂时用不到？
     private static Block findCorrespondingBlock(Board newBoard, Block original) {
         for (Block b : newBoard.getBlocks()) {
             if (b.getType() == original.getType() &&
@@ -106,4 +128,9 @@ public class BFSolver {
         }
         return null;
     }
+
+
+
+
 }
+

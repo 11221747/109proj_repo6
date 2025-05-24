@@ -201,6 +201,17 @@ public class GameFrame extends JFrame {
         timeBar.setStringPainted(true);
         timeBar.setBounds(0, 0, 591, 20);
         layeredPane.add(timeBar, JLayeredPane.PALETTE_LAYER);
+
+
+        JButton aiSolveBtn = new JButton("AI solver");
+        aiSolveBtn.addActionListener(e -> {
+            controller.autoSolve();
+        });
+
+        layeredPane.add(aiSolveBtn, JLayeredPane.PALETTE_LAYER);
+        aiSolveBtn.setBounds(65, 450, btnWidth, btnHeight);
+
+
     }
 
     public void updateTimerDisplay(int seconds) {
