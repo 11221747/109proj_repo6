@@ -5,24 +5,24 @@ import java.io.*;
 public class UserStorage {
     // 注册用户（用户名作为文件名）
     public static void registerUser(String username, String password) throws Exception {
-        if (username == null || password==null) {
-            JOptionPane.showMessageDialog(
-                    null, "用户名或密码不能为空！", "用户名或密码不能为空提示", JOptionPane.WARNING_MESSAGE
-            );
-        } else {
+        if (username == null || username.trim().isEmpty() ||
+                password == null || password.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "username or password cannot be null!", "密码不能为空窗口", JOptionPane.INFORMATION_MESSAGE);
+
+        }
             File dir = new File("userData/");
             if (!dir.exists()) {
                 dir.mkdirs();
             }
             File userFile = new File("userData/" + username + ".txt");
             if (userFile.exists()) {
-                JOptionPane.showMessageDialog(null, "用户已注册！", "用户已注册窗口", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "register successful！", "用户已注册窗口", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
             try (FileWriter writer = new FileWriter(userFile)) {
-                writer.write(password); // 只存密码
+                writer.write(password); // 只存了密码
             }
-        }
+
     }
     // 验证登录（检查用户名和密码是否匹配）
     public static boolean login(String username, String password) throws IOException {
