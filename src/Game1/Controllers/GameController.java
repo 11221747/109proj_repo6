@@ -5,7 +5,8 @@ package Game1.Controllers;
 import java.io.*;
 import java.util.List;
 
-import Game1.AI.BFSolver;
+import Game1.AI.AStarSolver;
+
 import Game1.AI.MoveInfo;
 import Game1.models.Block;
 import Game1.models.Board;
@@ -190,37 +191,42 @@ public class GameController  {
 
 
     //AI相关
-    //bfs求解
+    // AI 自动求解
     public void autoSolve() {
-        new SwingWorker<Void, Void>() {
-            List<MoveInfo> solution;
-
+        new SwingWorker<List<MoveInfo>, Void>() {
             @Override
-            protected Void doInBackground() {
-                solution = BFSolver.findSolution(board);
-                return null;
+            protected List<MoveInfo> doInBackground() {
+                // 使用 A* 求解
+                List<MoveInfo> solution = AStarSolver.solve(board);
+                System.out.println("AI solution length: " + solution.size());
+                return solution;
             }
 
             @Override
             protected void done() {
-
-                if (solution != null && !solution.isEmpty()) {
+                try {
+                    List<MoveInfo> solution = get();
+                    if (solution == null || solution.isEmpty()) {
+                        System.out.println("No solution found or empty list.");
+                        return;
+                    }
+                    // 执行动画
                     new Thread(() -> {
-
                         for (MoveInfo move : solution) {
-                            SwingUtilities.invokeLater(() -> {      //抓到要移动的block和移动方向
+                            SwingUtilities.invokeLater(() -> {
                                 Block target = board.getBlocks().get(move.blockIndex);
                                 gameframe.setSelectedBlock(target);
                                 moveBlock(move.direction);
                             });
-
                             try {
-                                Thread.sleep(500);      //每移动一步的休息时间
+                                Thread.sleep(500);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
                         }
                     }).start();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }.execute();
