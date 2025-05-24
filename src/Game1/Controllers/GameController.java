@@ -153,21 +153,15 @@ public class GameController  {
             if (remainingSeconds <= 0) {
                 countdownTimer.stop();
                 gameframe.handleTimeOut(); // 显示超时提示
-
+                resetGame();
             }
 
-
         });
-
-
     }
 
     // 启动/停止倒计时
     //第一步移动了再启动
     public void countdown_Start() {
-
-
-
         if (isTimerEnabled && !countdownTimer.isRunning()) {
 
             countdownTimer.start();

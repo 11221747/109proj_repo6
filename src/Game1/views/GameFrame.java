@@ -6,6 +6,8 @@ import Game1.Controllers.GameController;
 import java.awt.*;
 import java.awt.event.*;
 
+import Game1.Controllers.MusicPlayer;
+import Game1.Controllers.UserController;
 import Game1.models.Block;
 import Game1.models.Board;
 
@@ -19,6 +21,9 @@ public class GameFrame extends JFrame {
     private GameController controller;
     private BoardPanel boardPanel;
     private JProgressBar timeBar;
+    private UserController userController;
+    private GameController gameController;
+    private MusicPlayer musicPlayer;
 
 
     private Block selectedBlock;
@@ -26,36 +31,123 @@ public class GameFrame extends JFrame {
     //构造方法
     public GameFrame(GameController controller) {
         this.controller = controller;
-        initUI();
+        this.userController= userController;
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setTitle("Klotski Puzzle");
+        setResizable(false);
+        setSize(591, 550);////有点矮，如果把按钮移到左边就不矮了
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setPreferredSize(new Dimension(591, 550));
+
+        setContentPane(layeredPane);
+        // 先添加背景
+        addBackground(layeredPane);
+
+        // 再初始化UI组件
+        initUI(layeredPane);
+
+        setLocationRelativeTo(null);
     }
 
-    private void initUI() {
+    private void addBackground(JLayeredPane layeredPane) {
+        try {
+            String imagePath = "saves/gameBackground.png";
+            ImageIcon originalIcon = new ImageIcon(imagePath);
+
+            int imgWidth = originalIcon.getIconWidth();
+            int imgHeight = originalIcon.getIconHeight();
+
+            //填满
+            double widthRatio = (double)591 / imgWidth;
+            double heightRatio = (double)550 / imgHeight;
+            double scaleRatio = Math.max(widthRatio, heightRatio);
+
+            // 计算缩放后尺存
+            int scaledWidth = (int)(imgWidth * scaleRatio);
+            int scaledHeight = (int)(imgHeight * scaleRatio);
+
+            // 缩放
+            Image scaledImage = originalIcon.getImage().getScaledInstance(
+                    scaledWidth,
+                    scaledHeight,
+                    Image.SCALE_SMOOTH
+            );
+
+            //左对齐
+            JLabel background = new JLabel(new ImageIcon(scaledImage)) {
+                @Override
+                public void paintComponent(Graphics g) {
+                    int y = (getHeight() - scaledHeight) / 2;
+                    g.drawImage(scaledImage, 0, y, this);
+                }
+            };
+
+            background.setBounds(0, 0, 591, 550);
+            layeredPane.add(background, JLayeredPane.DEFAULT_LAYER);
+
+        } catch (Exception e) {
+            System.err.println("加载背景图片失败: " + e.getMessage());
+            layeredPane.setBackground(Color.CYAN);
+        }
+    }
+
+    private void initUI(JLayeredPane layeredPane) {
+        setLayout(null);
         setTitle("Klotski Puzzle");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setResizable(false);
-
+        // 游戏主面板（需手动设置位置和大小）
         boardPanel = new BoardPanel();
-        add(boardPanel);
+        boardPanel.setOpaque(false);
+        boardPanel.setBounds(250, 50, 591, 400);
+        layeredPane.add(boardPanel, JLayeredPane.PALETTE_LAYER);
 
         JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(null);
+        controlPanel.setBounds(0, 450, 591, 100); // 控制面板位置
+
         JButton upButton = new JButton("Up");
+        upButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
         JButton downButton = new JButton("Down");
+        downButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
         JButton leftButton = new JButton("Left");
+        leftButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
         JButton rightButton = new JButton("Right");
+        rightButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
         JButton resetButton = new JButton("Reset");
+        resetButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
         JButton saveButton = new JButton("Save");
+       saveButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
         JButton loadButton = new JButton("Load");
+        loadButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
+        JButton undoButton = new JButton("Undo");//撤回键的initial在这
+        undoButton.setFont(new Font("大字体", Font.PLAIN, 10));
+
+        int btnWidth = 80;
+        int btnHeight = 30;
+
+        upButton.setBounds(65, 100, btnWidth, btnHeight);
+        leftButton.setBounds(30, 135, btnWidth, btnHeight);
+        rightButton.setBounds(110, 135, btnWidth, btnHeight);
+        downButton.setBounds(65, 180, btnWidth, btnHeight);
+
+        resetButton.setBounds(65, 270, btnWidth, btnHeight);
+        saveButton.setBounds(65, 305, btnWidth, btnHeight);
+        loadButton.setBounds(65, 340, btnWidth, btnHeight);
+        undoButton.setBounds(65, 375, btnWidth, btnHeight);
+
 
         upButton.addActionListener(e -> controller.moveBlock(Board.Direction.UP));
         downButton.addActionListener(e ->  controller.moveBlock(Board.Direction.DOWN));
         leftButton.addActionListener(e ->  controller.moveBlock(Board.Direction.LEFT));
         rightButton.addActionListener(e ->  controller.moveBlock(Board.Direction.RIGHT));
 
-        resetButton.addActionListener(e -> {
-            controller.resetGame();
-            selectedBlock = null;
-            boardPanel.repaint();
-        });
 
         saveButton.addActionListener(e -> {
             if (controller.saveGame()) {
@@ -75,8 +167,13 @@ public class GameFrame extends JFrame {
             }
         });
 
+        resetButton.addActionListener(e -> {
+            controller.resetGame();
+            selectedBlock = null;
+            boardPanel.repaint();
+        });
+
         //新加的撤回按钮
-        JButton undoButton = new JButton("Undo");
         undoButton.addActionListener(e -> {
             if (controller.undo()) {
                 selectedBlock = null; // 清空选中块
@@ -89,27 +186,21 @@ public class GameFrame extends JFrame {
             }
         });
 
+
+        layeredPane.add(upButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(downButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(rightButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(leftButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(saveButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(loadButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(undoButton, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(resetButton, JLayeredPane.PALETTE_LAYER);
         //限时相关的
 
-        timeBar = new JProgressBar(   0, getController().getTimeLimit()    );
+        timeBar = new JProgressBar(0, controller.getTimeLimit());
         timeBar.setStringPainted(true);
-        add(timeBar, BorderLayout.NORTH);
-
-
-        controlPanel.add(upButton);
-        controlPanel.add(downButton);
-        controlPanel.add(leftButton);
-        controlPanel.add(rightButton);
-        controlPanel.add(resetButton);
-        controlPanel.add(saveButton);
-        controlPanel.add(loadButton);
-        controlPanel.add(undoButton);
-
-        add(controlPanel, BorderLayout.SOUTH);
-
-        pack();
-        setLocationRelativeTo(null);
-
+        timeBar.setBounds(0, 0, 591, 20);
+        layeredPane.add(timeBar, JLayeredPane.PALETTE_LAYER);
     }
 
     public void updateTimerDisplay(int seconds) {
@@ -121,9 +212,10 @@ public class GameFrame extends JFrame {
 
     public void handleTimeOut() {
         JOptionPane.showMessageDialog(this, "time is up! game is over");
-        controller.resetGame();
         setVisible(false);
-
+        this.dispose();
+        System.exit(0);
+        // 返回登录界面
         //之后怎么做？？todo
         //超时了之后游戏其实因该继续
 
