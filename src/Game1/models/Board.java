@@ -1,6 +1,8 @@
 package Game1.models;
 
 
+import Game1.Controllers.MusicPlayer;
+
 import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -93,7 +95,7 @@ public class Board implements Serializable {
         switch (direction) {
             case UP: block.setPosition(block.getX(), block.getY() - 1); break;
             case DOWN: block.setPosition(block.getX(), block.getY() + 1); break;
-            case LEFT: block.setPosition(block.getX() - 1, block.getY()); break;
+            case LEFT: block.setPosition(block.getX() - 1, block.getY());break;
             case RIGHT: block.setPosition(block.getX() + 1, block.getY()); break;
         }
 

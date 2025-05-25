@@ -5,8 +5,8 @@ package Game1.Controllers;
 import java.io.*;
 import java.util.List;
 
-import Game1.AI.AStarSolver;
 
+import Game1.AI.AStarSolver;
 import Game1.AI.MoveInfo;
 import Game1.models.Block;
 import Game1.models.Board;
@@ -30,7 +30,7 @@ public class GameController  {
     private boolean isTimerEnabled = false; // 是否启用倒计时
     private boolean firstMove_done = false;
 
-
+    private MusicPlayer musicPlayer;
 
     private GameFrame gameframe;
 
@@ -45,7 +45,7 @@ public class GameController  {
     //构造方法和设置用户
     public GameController() {
         this.board = new Board();
-
+        this.musicPlayer = new MusicPlayer();
     }
 
 
@@ -59,6 +59,9 @@ public class GameController  {
             setFirstMove_done(true);
         }
 
+
+        //可以move了之后
+        musicPlayer.play("data/bubble.wav",false);
         getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
         gameframe.repaint();
 
@@ -159,21 +162,15 @@ public class GameController  {
             if (remainingSeconds <= 0) {
                 countdownTimer.stop();
                 gameframe.handleTimeOut(); // 显示超时提示
-
+                resetGame();
             }
 
-
         });
-
-
     }
 
     // 启动/停止倒计时
     //第一步移动了再启动
     public void countdown_Start() {
-
-
-
         if (isTimerEnabled && !countdownTimer.isRunning()) {
 
             countdownTimer.start();

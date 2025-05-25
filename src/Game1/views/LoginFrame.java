@@ -117,11 +117,15 @@ public class LoginFrame extends JFrame {
 
 
         RegisterBtn.addActionListener(e -> {
-            System.out.println("Username = " + usernameField.getText());
-            System.out.println("Password = " + passwordField.getText());
-            /// ///////获取注册用户密码，储存文件
 
             try {
+                if (usernameField.getText().isEmpty() ||  passwordField.getText().isEmpty()) {
+                    JOptionPane.showMessageDialog(null,
+                            "username or password cannot be null！！",
+                            "密码不能为空",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
                 UserStorage.registerUser(usernameField.getText(), passwordField.getText());//保存注册用户信息
                 JOptionPane.showMessageDialog(null, "注册成功，请重新登录！", "成功登录窗口", JOptionPane.INFORMATION_MESSAGE
                 );
