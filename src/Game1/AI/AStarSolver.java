@@ -53,7 +53,7 @@ public class AStarSolver {
     public static List<MoveInfo> solve(Board board) {
         int R = Board.ROWS, C = Board.COLS;
         List<Block> blocks = new ArrayList<>(board.getBlocks());
-        // ¶¨Î»²Ü²Ù¿éË÷Òı
+        // å®šä½æ›¹æ“å—ç´¢å¼•
         for (int i = 0; i < blocks.size(); i++) {
             if (blocks.get(i).getType() == Block.BlockType.CAO_CAO) {
                 caoIndex = i;
@@ -135,9 +135,9 @@ public class AStarSolver {
             minR=Math.min(minR,cell[0]);
             minC=Math.min(minC,cell[1]);
         }
-        // Çå³ıÔ­Î»ÖÃ
+        // æ¸…é™¤åŸä½ç½®
         for (int[] cell:cells) ng[cell[0]][cell[1]]=-1;
-        // Ìî³äĞÂÎ»ÖÃ
+        // å¡«å……æ–°ä½ç½®
         for (int dr=0;dr<b.getHeight();dr++) {
             for (int dc=0;dc<b.getWidth();dc++) {
                 ng[minR+dy+dr][minC+dx+dc] = idx;
