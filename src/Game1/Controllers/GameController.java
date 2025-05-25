@@ -194,7 +194,11 @@ public class GameController  {
             @Override
             protected List<MoveInfo> doInBackground() {
 
-                List<MoveInfo> solution = BeamSolver.solve(board);
+                //这里要选算法了
+                //beam最快但是绕远路
+                //双向BFS比较快，路径很短，但是无法正确走完
+                //Astar慢，但是是最快路径
+                List<MoveInfo> solution = AStarSolver.solve(board);
 
 
                 System.out.println("AI solution length: " + solution.size());
@@ -218,7 +222,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(250);
+                                Thread.sleep(25);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
