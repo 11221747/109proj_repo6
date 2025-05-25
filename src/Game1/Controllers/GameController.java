@@ -222,7 +222,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(25);
+                                Thread.sleep(250);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }

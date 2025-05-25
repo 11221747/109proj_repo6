@@ -5,22 +5,26 @@ import Game1.models.Block;
 
 import java.awt.Point;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A*搜索求解器
- * 保障找到最短路径解
+ * 多线程 A* 搜索求解器，带搜索进度输出
  */
 public class AStarSolver {
     private static final int EXIT_R = 3, EXIT_C = 1;
     private static int R, C, caoIdx;
     private static List<Block> blocks;
+    private static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
+    private static final AtomicInteger processed = new AtomicInteger(0);
+    private static final AtomicInteger maxDepth = new AtomicInteger(0);
 
     public static List<MoveInfo> solve(Board board) {
         R = Board.ROWS;
         C = Board.COLS;
         blocks = board.getBlocks();
 
-        // 找曹操索引
         caoIdx = -1;
         for (int i = 0; i < blocks.size(); i++) {
             if (blocks.get(i).getType() == Block.BlockType.CAO_CAO) {
@@ -34,44 +38,69 @@ public class AStarSolver {
         }
 
         State start = State.fromBoard();
-
-        PriorityQueue<State> open = new PriorityQueue<>();
-        Map<StateKey, Integer> visited = new HashMap<>();
+        PriorityBlockingQueue<State> open = new PriorityBlockingQueue<>();
+        ConcurrentHashMap<StateKey, Integer> visited = new ConcurrentHashMap<>();
 
         open.offer(start);
         visited.put(start.key, start.g);
 
-        int maxDepth = 0;
+        AtomicBoolean solved = new AtomicBoolean(false);
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        CompletionService<List<MoveInfo>> completionService = new ExecutorCompletionService<>(executor);
 
-        while (!open.isEmpty()) {
-            State cur = open.poll();
+        Runnable worker = () -> {
+            while (!solved.get()) {
+                State cur;
+                try {
+                    cur = open.poll(50, TimeUnit.MILLISECONDS);
+                    if (cur == null) continue;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
 
-            if (cur.g > maxDepth) {
-                maxDepth = cur.g;
-                System.out.println("当前搜索深度（步数）: " + maxDepth);
-            }
+                int count = processed.incrementAndGet();
+                if (cur.g > maxDepth.get()) maxDepth.set(cur.g);
+                if (count % 100000 == 0) {
+                    System.out.printf("线程[%s] 已处理状态数: %d, 当前最大深度: %d, open队列大小: %d, visited状态数: %d%n",
+                            Thread.currentThread().getName(), count, maxDepth.get(), open.size(), visited.size());
+                }
 
-            if (cur.h == 0) {
-                System.out.println("找到最短路径，步数：" + cur.g);
-                return reconstructPath(cur);
-            }
+                if (cur.h == 0) {
+                    if (solved.compareAndSet(false, true)) {
+                        completionService.submit(() -> reconstructPath(cur));
+                    }
+                    return;
+                }
 
-            for (int idx = 0; idx < blocks.size(); idx++) {
-                for (Board.Direction dir : Board.Direction.values()) {
-                    if (!cur.canMove(idx, dir)) continue;
-                    if (cur.isReverseMove(idx, dir)) continue; // 优化避免立即反向移动
+                for (int idx = 0; idx < blocks.size(); idx++) {
+                    for (Board.Direction dir : Board.Direction.values()) {
+                        if (!cur.canMove(idx, dir)) continue;
+                        if (cur.isReverseMove(idx, dir)) continue;
 
-                    State ns = cur.move(idx, dir);
-                    Integer visitedG = visited.get(ns.key);
-                    if (visitedG == null || ns.g < visitedG) {
-                        visited.put(ns.key, ns.g);
-                        open.offer(ns);
+                        State ns = cur.move(idx, dir);
+                        Integer prevG = visited.get(ns.key);
+                        if (prevG == null || ns.g < prevG) {
+                            visited.put(ns.key, ns.g);
+                            open.offer(ns);
+                        }
                     }
                 }
             }
+        };
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executor.execute(worker);
         }
-        System.out.println("无解");
-        return Collections.emptyList();
+
+        try {
+            Future<List<MoveInfo>> result = completionService.take();
+            executor.shutdownNow();
+            return result.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
     }
 
     private static List<MoveInfo> reconstructPath(State state) {
@@ -84,14 +113,12 @@ public class AStarSolver {
     }
 
     private static class State implements Comparable<State> {
-        final int g; // 实际步数
-        final int h; // 启发式估价
-        final int f; // f = g + h
-        final int[][] grid; // [R][C] 每格存块索引，-1表示空
-        final List<List<Point>> cells; // 每块占据的格子坐标
-        final MoveInfo move; // 生成本状态的移动
+        final int g, h, f;
+        final int[][] grid;
+        final List<List<Point>> cells;
+        final MoveInfo move;
         final State parent;
-        final StateKey key; // 紧凑编码用于hash和比较
+        final StateKey key;
 
         private State(int g, int[][] grid, List<List<Point>> cells, MoveInfo move, State parent) {
             this.g = g;
@@ -150,12 +177,10 @@ public class AStarSolver {
             return true;
         }
 
-        // 判断是否是上一步的反向移动，避免立即回头
         boolean isReverseMove(int idx, Board.Direction dir) {
             if (parent == null || move == null) return false;
             if (move.blockIndex == idx) {
-                Board.Direction lastDir = move.direction;
-                return switch (lastDir) {
+                return switch (move.direction) {
                     case UP -> dir == Board.Direction.DOWN;
                     case DOWN -> dir == Board.Direction.UP;
                     case LEFT -> dir == Board.Direction.RIGHT;
@@ -182,14 +207,11 @@ public class AStarSolver {
                 for (Point p : lst) cp.add(new Point(p));
                 nc.add(cp);
             }
-            // 清空原位置
             for (Point p : nc.get(idx)) ng[p.y][p.x] = -1;
-            // 更新新位置
             for (Point p : nc.get(idx)) {
                 int nx = p.x + dx, ny = p.y + dy;
                 ng[ny][nx] = idx;
             }
-            // 更新块坐标
             for (Point p : nc.get(idx)) p.translate(dx, dy);
             return new State(gNew, ng, nc, new MoveInfo(idx, dir), this);
         }
@@ -200,10 +222,6 @@ public class AStarSolver {
         }
     }
 
-    /**
-     * 状态编码类，使用紧凑的 byte[] 存储 grid 信息，
-     * 重写 equals 和 hashCode，用于visited判断和HashMap键
-     */
     private static class StateKey {
         private final byte[] data;
 
@@ -211,7 +229,6 @@ public class AStarSolver {
             data = new byte[R * C];
             for (int y = 0; y < R; y++) {
                 for (int x = 0; x < C; x++) {
-                    // -1 表示空，转换成0，块索引+1，防止负数
                     data[y * C + x] = (byte) (grid[y][x] + 1);
                 }
             }
