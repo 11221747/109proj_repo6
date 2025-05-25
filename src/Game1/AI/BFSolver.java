@@ -1,82 +1,70 @@
 package Game1.AI;
 
-
 import Game1.models.Board;
 import Game1.models.Block;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.*;
 
 public class BFSolver {
     private static class StateNode {
-        final Board board;
+        final List<int[]> positions; // 每个块的 {x,y}
         final MoveInfo move;
         final StateNode parent;
-        final int depth;
 
-        StateNode(Board board, MoveInfo move, StateNode parent, int depth) {
-            this.board = deepCopy(board);
+        StateNode(List<int[]> positions, MoveInfo move, StateNode parent) {
+            this.positions = positions;
             this.move = move;
             this.parent = parent;
-            this.depth = depth;
         }
 
-
-        String getStateKey() {
-            List<Block> sortedBlocks = new ArrayList<>(board.getBlocks());
-            sortedBlocks.sort(Comparator.comparingInt(Block::getY)
-                    .thenComparingInt(Block::getX)
-                    .thenComparing(Block::getType));
+        String key() {
             StringBuilder sb = new StringBuilder();
-            for (Block block : sortedBlocks) {
-                sb.append(block.getX()).append(",")
-                        .append(block.getY()).append(";");
+            for (int[] p : positions) {
+                sb.append(p[0]).append(',').append(p[1]).append(';');
             }
             return sb.toString();
         }
     }
 
-    public static List<MoveInfo> findSolution(Board initialBoard) {
-        Queue<StateNode> queue = new LinkedList<>();
-        Map<String, Integer> visited = new HashMap<>();
+    public static List<MoveInfo> solve(Board initialBoard) {
+        List<int[]> startPos = new ArrayList<>();
+        for (Block b : initialBoard.getBlocks()) {
+            startPos.add(new int[]{b.getX(), b.getY()});
+        }
 
-        // 初始状态
-        queue.add(new StateNode(initialBoard, null, null, 0));
-        visited.put(queue.peek().getStateKey(), 0);
+        Queue<StateNode> queue = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
+
+        StateNode start = new StateNode(startPos, null, null);
+        queue.add(start);
+        visited.add(start.key());
 
         while (!queue.isEmpty()) {
-            StateNode current = queue.poll();
-
-            if (current.board.isWin()) {
-                return buildSolution(current);
+            StateNode cur = queue.poll();
+            // 构造 Board 实例用于判断和生成下一步
+            Board board = new Board();
+            // 设置 board 的 blocks 位置
+            List<Block> bs = board.getBlocks();
+            for (int i = 0; i < bs.size(); i++) {
+                bs.get(i).setPosition(cur.positions.get(i)[0], cur.positions.get(i)[1]);
             }
+            if (board.isWin()) return buildPath(cur);
 
-            // 遍历所有方块
-            List<Block> blocks = current.board.getBlocks();
-            for (int i = 0; i < blocks.size(); i++) {
-                Block block = blocks.get(i);
-
-                // 尝试所有方向
+            // 遍历所有移动
+            for (int i = 0; i < bs.size(); i++) {
+                Block block = bs.get(i);
                 for (Board.Direction dir : Board.Direction.values()) {
-                    if (current.board.canMove(block, dir)) {
-                        Board newBoard = deepCopy(current.board);
-                        Block newBlock = newBoard.getBlocks().get(i);
+                    if (!board.canMove(block, dir)) continue;
+                    // 生成新 positions
+                    List<int[]> newPos = new ArrayList<>();
+                    for (int[] p : cur.positions) newPos.add(new int[]{p[0], p[1]});
+                    newPos.get(i)[0] += dir.dx();
+                    newPos.get(i)[1] += dir.dy();
 
-                        newBoard.moveBlock(newBlock, dir);
-                        StateNode newNode = new StateNode(newBoard,
-                                new MoveInfo(i, dir), current, current.depth + 1);
-
-                        String key = newNode.getStateKey();
-                        Integer existDepth = visited.get(key);
-
-                        // 仅当新状态深度更低时才加入队列
-                        if (existDepth == null || existDepth > newNode.depth) {
-                            visited.put(key, newNode.depth);
-                            queue.add(newNode);
-                        }
+                    StateNode nxt = new StateNode(newPos, new MoveInfo(i, dir), cur);
+                    String key = nxt.key();
+                    if (visited.add(key)) {
+                        queue.add(nxt);
                     }
                 }
             }
@@ -84,53 +72,13 @@ public class BFSolver {
         return Collections.emptyList();
     }
 
-    private static List<MoveInfo> buildSolution(StateNode node) {
-        LinkedList<MoveInfo> solution = new LinkedList<>();
+    private static List<MoveInfo> buildPath(StateNode node) {
+        LinkedList<MoveInfo> path = new LinkedList<>();
         while (node.parent != null) {
-            solution.addFirst(node.move);
+            path.addFirst(node.move);
             node = node.parent;
         }
-        return solution;
+        return path;
     }
-
-    // 深度拷贝Board
-    private static Board deepCopy(Board original) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(original);
-
-            ByteArrayInputStream bais =
-                    new ByteArrayInputStream(baos.toByteArray());
-            ObjectInputStream ois = new ObjectInputStream(bais);
-
-            return (Board) ois.readObject();
-        } catch (Exception e) {
-            throw new RuntimeException("Deep copy failed", e);
-        }
-    }
-
-
-
-
-
-
-
-
-    // 在复制后的Board中找到对应的Block    暂时用不到？
-    private static Block findCorrespondingBlock(Board newBoard, Block original) {
-        for (Block b : newBoard.getBlocks()) {
-            if (b.getType() == original.getType() &&
-                    b.getX() == original.getX() &&
-                    b.getY() == original.getY()) {
-                return b;
-            }
-        }
-        return null;
-    }
-
-
-
-
 }
 

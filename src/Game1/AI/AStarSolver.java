@@ -3,40 +3,44 @@ package Game1.AI;
 import Game1.models.Board;
 import Game1.models.Block;
 
+import java.awt.Point;
 import java.util.*;
 
-
 public class AStarSolver {
-    private static class State {
-        final int[][] grid;
-        final int g;
-        final int h;
-        final int f;
-        final State parent;
-        final MoveInfo move;
+    private static final int EXIT_R = 3, EXIT_C = 1;
+    private static final int BLOCKER_PENALTY = 2;
 
-        State(int[][] grid, int g, State parent, MoveInfo move) {
+    private static class State {
+        int[][] grid;
+        List<List<Point>> cells;
+        int g, h, f;
+        State parent;
+        MoveInfo move;
+
+        State(int[][] grid, List<List<Point>> cells, int g, State parent, MoveInfo move) {
             this.grid = grid;
+            this.cells = cells;
             this.g = g;
-            this.h = calcHeuristic(grid);
+            this.h = calcHeuristic(cells);
             this.f = this.g + this.h;
             this.parent = parent;
             this.move = move;
         }
 
-        private int calcHeuristic(int[][] grid) {
-            int targetR = 3, targetC = 1;
+        private int calcHeuristic(List<List<Point>> cells) {
+            List<Point> cao = cells.get(caoIdx);
             int minR = Integer.MAX_VALUE, minC = Integer.MAX_VALUE;
-            for (int r = 0; r < grid.length; r++) {
-                for (int c = 0; c < grid[0].length; c++) {
-                    if (grid[r][c] == caoIndex) {
-                        minR = Math.min(minR, r);
-                        minC = Math.min(minC, c);
-                    }
-                }
+            for (Point p : cao) {
+                minR = Math.min(minR, p.y);
+                minC = Math.min(minC, p.x);
             }
-            if (minR==Integer.MAX_VALUE) return Integer.MAX_VALUE;
-            return Math.abs(minR - targetR) + Math.abs(minC - targetC);
+            int d = Math.abs(minR - EXIT_R) + Math.abs(minC - EXIT_C);
+            int block = 0;
+            for (int r = minR; r < EXIT_R; r++) {
+                int o = grid[r][EXIT_C];
+                if (o != -1 && o != caoIdx) block++;
+            }
+            return d + block * BLOCKER_PENALTY;
         }
 
         String key() {
@@ -49,109 +53,122 @@ public class AStarSolver {
         }
     }
 
-    private static int caoIndex;
+    private static int caoIdx;
 
     public static List<MoveInfo> solve(Board board) {
         int R = Board.ROWS, C = Board.COLS;
-        List<Block> blocks = new ArrayList<>(board.getBlocks());
-        // 定位曹操块索引
+        List<Block> blocks = board.getBlocks();
+
         for (int i = 0; i < blocks.size(); i++) {
             if (blocks.get(i).getType() == Block.BlockType.CAO_CAO) {
-                caoIndex = i;
+                caoIdx = i;
                 break;
             }
         }
-        int[][] grid0 = new int[R][C];
-        for (int[] row : grid0) Arrays.fill(row, -1);
+
+        int[][] initGrid = new int[R][C];
+        for (int[] row : initGrid) Arrays.fill(row, -1);
+        List<List<Point>> initCells = new ArrayList<>();
+        for (int i = 0; i < blocks.size(); i++) initCells.add(new ArrayList<>());
         for (int i = 0; i < blocks.size(); i++) {
             Block b = blocks.get(i);
             for (int dr = 0; dr < b.getHeight(); dr++) {
                 for (int dc = 0; dc < b.getWidth(); dc++) {
-                    grid0[b.getY() + dr][b.getX() + dc] = i;
+                    int r = b.getY() + dr, c = b.getX() + dc;
+                    initGrid[r][c] = i;
+                    initCells.get(i).add(new Point(c, r));
                 }
             }
         }
 
         PriorityQueue<State> open = new PriorityQueue<>(Comparator.comparingInt(s -> s.f));
         Map<String, Integer> bestG = new HashMap<>();
+        long expanded = 0;
 
-        State start = new State(grid0, 0, null, null);
+        State start = new State(initGrid, initCells, 0, null, null);
         open.add(start);
         bestG.put(start.key(), 0);
 
         while (!open.isEmpty()) {
             State cur = open.poll();
-            if (cur.h == 0) return buildPath(cur);
+            expanded++;
+            if (expanded % 1000 == 0) {
+                System.out.println("Expanded nodes: " + expanded + ", current g: " + cur.g + ", queue size: " + open.size());
+            }
 
-            for (int i = 0; i < blocks.size(); i++) {
+            if (cur.h == 0) {
+                System.out.println("Solution found after expanding " + expanded + " nodes, depth " + cur.g);
+                return buildPath(cur);
+            }
+
+            for (int idx = 0; idx < blocks.size(); idx++) {
                 for (Board.Direction dir : Board.Direction.values()) {
-                    if (!canMove(cur.grid, blocks.get(i), i, dir)) continue;
-                    int[][] ng = moveGrid(cur.grid, blocks.get(i), i, dir);
-                    State nxt = new State(ng, cur.g + 1, cur, new MoveInfo(i, dir));
-                    String key = nxt.key();
-                    if (!bestG.containsKey(key) || nxt.g < bestG.get(key)) {
-                        bestG.put(key, nxt.g);
+                    if (!canMove(cur, idx, dir)) continue;
+                    State nxt = makeMove(cur, idx, dir);
+                    String k = nxt.key();
+                    if (!bestG.containsKey(k) || nxt.g < bestG.get(k)) {
+                        bestG.put(k, nxt.g);
                         open.add(nxt);
                     }
                 }
             }
         }
+        System.out.println("No solution found after expanding " + expanded + " nodes.");
         return Collections.emptyList();
     }
 
-    private static boolean canMove(int[][] grid, Block b, int idx, Board.Direction dir) {
-        int dx=0, dy=0;
-        switch (dir) {
-            case UP -> dy=-1;
-            case DOWN -> dy=1;
-            case LEFT -> dx=-1;
-            case RIGHT -> dx=1;
+    private static boolean canMove(State s, int idx, Board.Direction d) {
+        int dx = 0, dy = 0;
+        switch (d) {
+            case UP -> dy = -1;
+            case DOWN -> dy = 1;
+            case LEFT -> dx = -1;
+            case RIGHT -> dx = 1;
         }
-        int R=grid.length, C=grid[0].length;
-        List<int[]> cells = new ArrayList<>();
-        for (int r=0;r<R;r++) for (int c=0;c<C;c++) if (grid[r][c]==idx) cells.add(new int[]{r,c});
-        for (int[] cell:cells) {
-            int nr=cell[0]+dy, nc=cell[1]+dx;
-            if (nr<0||nr>=R||nc<0||nc>=C) return false;
-            if (grid[nr][nc]!=-1 && grid[nr][nc]!=idx) return false;
+        int R = s.grid.length, C = s.grid[0].length;
+        for (Point p : s.cells.get(idx)) {
+            int nr = p.y + dy, nc = p.x + dx;
+            if (nr < 0 || nr >= R || nc < 0 || nc >= C) return false;
+            int occ = s.grid[nr][nc];
+            if (occ != -1 && occ != idx) return false;
         }
         return true;
     }
 
-    private static int[][] moveGrid(int[][] grid, Block b, int idx, Board.Direction dir) {
-        int R=grid.length, C=grid[0].length;
+    private static State makeMove(State cur, int idx, Board.Direction d) {
+        int dx = 0, dy = 0;
+        switch (d) {
+            case UP -> dy = -1;
+            case DOWN -> dy = 1;
+            case LEFT -> dx = -1;
+            case RIGHT -> dx = 1;
+        }
+        int R = cur.grid.length, C = cur.grid[0].length;
         int[][] ng = new int[R][C];
-        for (int r=0;r<R;r++) System.arraycopy(grid[r],0,ng[r],0,C);
-        int dx=0, dy=0;
-        switch (dir) {
-            case UP -> dy=-1;
-            case DOWN -> dy=1;
-            case LEFT -> dx=-1;
-            case RIGHT -> dx=1;
+        for (int r = 0; r < R; r++) System.arraycopy(cur.grid[r], 0, ng[r], 0, C);
+        List<List<Point>> ncells = new ArrayList<>();
+        for (List<Point> lst : cur.cells) {
+            List<Point> copy = new ArrayList<>();
+            for (Point p : lst) copy.add(new Point(p));
+            ncells.add(copy);
         }
-        List<int[]> cells = new ArrayList<>();
-        for (int r=0;r<R;r++) for (int c=0;c<C;c++) if (ng[r][c]==idx) cells.add(new int[]{r,c});
-        int minR= Integer.MAX_VALUE, minC=Integer.MAX_VALUE;
-        for (int[] cell:cells) {
-            minR=Math.min(minR,cell[0]);
-            minC=Math.min(minC,cell[1]);
+        for (Point p : cur.cells.get(idx)) ng[p.y][p.x] = -1;
+        for (Point p : cur.cells.get(idx)) {
+            ng[p.y + dy][p.x + dx] = idx;
         }
-        // 清除原位置
-        for (int[] cell:cells) ng[cell[0]][cell[1]]=-1;
-        // 填充新位置
-        for (int dr=0;dr<b.getHeight();dr++) {
-            for (int dc=0;dc<b.getWidth();dc++) {
-                ng[minR+dy+dr][minC+dx+dc] = idx;
-            }
-        }
-        return ng;
+        List<Point> moved = ncells.get(idx);
+        int finalDy = dy;
+        int finalDx = dx;
+        moved.replaceAll(p -> new Point(p.x + finalDx, p.y + finalDy));
+
+        return new State(ng, ncells, cur.g + 1, cur, new MoveInfo(idx, d));
     }
 
-    private static List<MoveInfo> buildPath(State node) {
+    private static List<MoveInfo> buildPath(State end) {
         LinkedList<MoveInfo> path = new LinkedList<>();
-        while (node.parent != null) {
-            path.addFirst(node.move);
-            node = node.parent;
+        while (end.parent != null) {
+            path.addFirst(end.move);
+            end = end.parent;
         }
         return path;
     }

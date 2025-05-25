@@ -21,10 +21,16 @@ public class Board implements Serializable {
     private transient Stack<Board> history = new Stack<>(); // 不序列化历史记录,
 
 
-
+    //构造方法：有一个给AI用
     public Board() {
         initializeBlocks();
         moves = 0;
+    }
+
+    public Board(Board board) {
+        this.blocks = board.blocks;
+        this.moves = board.moves;
+        this.history = new Stack<>();
     }
 
 
@@ -185,7 +191,17 @@ public class Board implements Serializable {
     }
 
     //枚举类   javabean
-    public enum Direction { UP, DOWN, LEFT, RIGHT }
+
+    public enum Direction {
+        UP(0,-1), DOWN(0,1), LEFT(-1,0), RIGHT(1,0);
+
+        private final int dx, dy;
+        Direction(int dx, int dy) { this.dx = dx; this.dy = dy; }
+        public int dx() { return dx; }
+        public int dy() { return dy; }
+    }
+
+
 
     public List<Block> getBlocks() {
         return blocks;

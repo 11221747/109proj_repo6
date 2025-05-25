@@ -3,11 +3,11 @@ package Game1.Controllers;
 
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 
 
-import Game1.AI.AStarSolver;
-import Game1.AI.MoveInfo;
+import Game1.AI.*;
 import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
@@ -26,7 +26,7 @@ public class GameController  {
     //计时相关：
     private javax.swing.Timer countdownTimer;
     private int timeLimit;
-    private int remainingSeconds ;      // 5分钟（300秒）
+    private int remainingSeconds ;
     private boolean isTimerEnabled = false; // 是否启用倒计时
     private boolean firstMove_done = false;
 
@@ -194,7 +194,10 @@ public class GameController  {
             @Override
             protected List<MoveInfo> doInBackground() {
                 // 使用 A* 求解
-                List<MoveInfo> solution = AStarSolver.solve(board);
+
+                List<MoveInfo> solution = BiDirectionalSolver.solve(board);
+
+
                 System.out.println("AI solution length: " + solution.size());
                 return solution;
             }
@@ -216,7 +219,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(500);
+                                Thread.sleep(250);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
