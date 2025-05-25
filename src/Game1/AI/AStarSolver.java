@@ -5,6 +5,7 @@ import Game1.models.Block;
 
 import java.util.*;
 
+
 public class AStarSolver {
     private static class State {
         final int[][] grid;
