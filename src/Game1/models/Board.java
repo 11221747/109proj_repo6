@@ -1,8 +1,6 @@
 package Game1.models;
 
 
-import Game1.Controllers.MusicPlayer;
-
 import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -27,9 +25,23 @@ public class Board implements Serializable {
         moves = 0;
     }
 
-    public Board(Board board) {
-        this.blocks = board.blocks;
-        this.moves = board.moves;
+
+    public Board(Board other) {
+        // 复制块列表
+        this.blocks = new ArrayList<>();
+        for (Block b : other.blocks) {
+            Block copy = new Block(
+                    b.getType(),
+                    b.getX(),
+                    b.getY(),
+                    b.getWidth(),
+                    b.getHeight(),
+                    b.getColor()
+            );
+            this.blocks.add(copy);
+        }
+        this.moves = other.moves;
+        // 重新初始化历史，不继承其他状态
         this.history = new Stack<>();
     }
 

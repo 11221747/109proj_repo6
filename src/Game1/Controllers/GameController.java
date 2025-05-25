@@ -193,9 +193,8 @@ public class GameController  {
         new SwingWorker<List<MoveInfo>, Void>() {
             @Override
             protected List<MoveInfo> doInBackground() {
-                // 使用 A* 求解
 
-                List<MoveInfo> solution = BiDirectionalSolver.solve(board);
+                List<MoveInfo> solution = BeamSolver.solve(board);
 
 
                 System.out.println("AI solution length: " + solution.size());

@@ -2,34 +2,44 @@ package Game1.AI;
 
 import Game1.models.Board;
 import Game1.models.Block;
-import java.util.*;
+
 import java.awt.Point;
+import java.util.*;
 
 /**
- * Bidirectional BFS Solver:
- * - 从初始状态和目标状态同时搜索，中途相遇。
- * - 状态用块位置数组表示，避免深拷贝 Board 对象。
- * - 通常能在最优步数分钟级范围内快速找到解。
+ * 优化版双向 BFS 求解器：
+ * - 预创建并重用临时 Board 实例
+ * - 批量缓存方向向量
+ * - 缓存 blocksSize，减少 repeated 方法调用
+ * - 实时打印扩展节点计数、当前深度、队列大小
  */
 public class BiDirectionalSolver {
-    // 定义状态节点
+    private static final int MAX_DEPTH = 200;
+
+    // 方向数组，与 Board.Direction 顺序一致
+    private static final Board.Direction[] DIRS = Board.Direction.values();
+    private static final int[] DX = { 0, 0, -1, 1 }; // UP, DOWN, LEFT, RIGHT
+    private static final int[] DY = { -1, 1, 0, 0 };
+
     private static class StateNode {
-        final List<Point> positions;
+        final List<Point> pos;
         final StateNode parent;
         final MoveInfo move;
         final int depth;
+        final String key;  // 预计算好，避免重复计算
 
-        StateNode(List<Point> positions, StateNode parent, MoveInfo move, int depth) {
-            this.positions = positions;
+        StateNode(List<Point> pos, StateNode parent, MoveInfo move, int depth) {
+            this.pos = pos;
             this.parent = parent;
             this.move = move;
             this.depth = depth;
+            this.key = buildKey(pos);
         }
 
-        String key() {
-            StringBuilder sb = new StringBuilder(positions.size() * 8);
-            for (Point p : positions) {
-                sb.append((char) (p.x + 1)).append((char) (p.y + 1));
+        private static String buildKey(List<Point> pList) {
+            StringBuilder sb = new StringBuilder(pList.size() * 2);
+            for (Point p : pList) {
+                sb.append((char) ('A' + p.x)).append((char) ('A' + p.y));
             }
             return sb.toString();
         }
@@ -49,67 +59,93 @@ public class BiDirectionalSolver {
         List<Block> blocks = board.getBlocks();
         int n = blocks.size();
 
+        // 1. 构造 start/goal positions
         List<Point> startPos = new ArrayList<>(n);
         for (Block b : blocks) startPos.add(new Point(b.getX(), b.getY()));
         StateNode start = new StateNode(startPos, null, null, 0);
 
         List<Point> goalPos = new ArrayList<>(n);
         for (Block b : blocks) goalPos.add(new Point(b.getX(), b.getY()));
+        // 把曹操块放到出口(1,3)
         for (int i = 0; i < n; i++) if (blocks.get(i).getType() == Block.BlockType.CAO_CAO) {
             goalPos.get(i).setLocation(1, 3);
             break;
         }
         StateNode goal = new StateNode(goalPos, null, null, 0);
 
+        // 2. 队列与访问记录
         Deque<StateNode> front = new ArrayDeque<>(), back = new ArrayDeque<>();
-        Map<String, StateNode> visitedFront = new HashMap<>(), visitedBack = new HashMap<>();
+        Map<String, StateNode> visF = new HashMap<>(), visB = new HashMap<>();
+        front.add(start); visF.put(start.key, start);
+        back .add(goal ); visB.put( goal.key,  goal);
 
-        front.add(start); visitedFront.put(start.key(), start);
-        back.add(goal);  visitedBack.put(goal.key(), goal);
+        // 3. 预创建一个临时 Board 用于 canMove
+        Board tempBoard = new Board(board);
 
         int depth = 0;
-        while (!front.isEmpty() && !back.isEmpty()) {
+        long expandedF = 0, expandedB = 0;
+
+        while (!front.isEmpty() && !back.isEmpty() && depth < MAX_DEPTH) {
             depth++;
-            System.out.println("Bidirectional depth=" + depth + ", front size=" + front.size() + ", back size=" + back.size());
+            System.out.printf("Depth=%d, frontSize=%d, backSize=%d%n",
+                    depth, front.size(), back.size());
+
+            // 先扩展较小一端
             if (front.size() <= back.size()) {
-                if (expandLayer(front, visitedFront, visitedBack, board, blocks))
-                    return mergePaths(visitedFront, visitedBack);
+                if (expand(front, visF, visB, blocks, tempBoard, ++expandedF, "F")) {
+                    return merge(visF, visB);
+                }
             } else {
-                if (expandLayer(back, visitedBack, visitedFront, board, blocks))
-                    return mergePaths(visitedFront, visitedBack);
-            }
-            if (depth > 200) {
-                System.out.println("Reached max depth limit");
-                break;
+                if (expand(back, visB, visF, blocks, tempBoard, ++expandedB, "B")) {
+                    return merge(visF, visB);
+                }
             }
         }
+
+        System.out.printf("Fail: expandedF=%d, expandedB=%d%n", expandedF, expandedB);
         return Collections.emptyList();
     }
 
-    private static boolean expandLayer(Deque<StateNode> queue,
-                                       Map<String, StateNode> selfVisited,
-                                       Map<String, StateNode> otherVisited,
-                                       Board boardTemplate,
-                                       List<Block> blocks) {
+    private static boolean expand(Deque<StateNode> queue,
+                                  Map<String, StateNode> selfVis,
+                                  Map<String, StateNode> otherVis,
+                                  List<Block> blocks,
+                                  Board tempBoard,
+                                  long expandedCount,
+                                  String tag) {
         int layerSize = queue.size();
         for (int k = 0; k < layerSize; k++) {
             StateNode cur = queue.poll();
-            Board temp = new Board(boardTemplate);
-            List<Point> pos = cur.positions;
-            for (int i = 0; i < blocks.size(); i++) temp.getBlocks().get(i).setPosition(pos.get(i).x, pos.get(i).y);
 
+            // 进度输出
+            if (expandedCount <= 10 || expandedCount % 1000 == 0) {
+                System.out.printf("[%s] expanded=%d, depth=%d, queue=%d%n",
+                        tag, expandedCount, cur.depth, queue.size());
+            }
+
+            // 恢复 tempBoard 到 cur.pos
             for (int i = 0; i < blocks.size(); i++) {
-                for (Board.Direction d : Board.Direction.values()) {
-                    if (!temp.canMove(temp.getBlocks().get(i), d)) continue;
-                    List<Point> newPos = new ArrayList<>(pos.size());
-                    for (Point p : pos) newPos.add(new Point(p));
-                    newPos.get(i).translate(d.dx(), d.dy());
+                Point p = cur.pos.get(i);
+                tempBoard.getBlocks().get(i).setPosition(p.x, p.y);
+            }
 
-                    StateNode next = new StateNode(newPos, cur, new MoveInfo(i, d), cur.depth + 1);
-                    String key = next.key();
-                    if (selfVisited.containsKey(key)) continue;
-                    selfVisited.put(key, next);
-                    if (otherVisited.containsKey(key)) {
+            // 尝试移动每个块
+            for (int i = 0; i < blocks.size(); i++) {
+                for (int d = 0; d < DIRS.length; d++) {
+                    if (!tempBoard.canMove(tempBoard.getBlocks().get(i), DIRS[d])) continue;
+
+                    // 复制位置列表
+                    List<Point> np = new ArrayList<>(cur.pos.size());
+                    for (Point p : cur.pos) np.add(new Point(p));
+
+                    // 移动第 i 块
+                    np.get(i).translate(DX[d], DY[d]);
+
+                    StateNode next = new StateNode(np, cur, new MoveInfo(i, DIRS[d]), cur.depth + 1);
+                    if (selfVis.containsKey(next.key)) continue;
+                    selfVis.put(next.key, next);
+
+                    if (otherVis.containsKey(next.key)) {
                         System.out.println("Meet at depth=" + next.depth);
                         return true;
                     }
@@ -120,15 +156,22 @@ public class BiDirectionalSolver {
         return false;
     }
 
-    private static List<MoveInfo> mergePaths(Map<String, StateNode> fVis,
-                                             Map<String, StateNode> bVis) {
-        for (String key : fVis.keySet()) {
-            if (bVis.containsKey(key)) {
-                StateNode midF = fVis.get(key), midB = bVis.get(key);
+    private static List<MoveInfo> merge(Map<String, StateNode> visF,
+                                        Map<String, StateNode> visB) {
+        for (Map.Entry<String, StateNode> e : visF.entrySet()) {
+            String key = e.getKey();
+            if (visB.containsKey(key)) {
+                StateNode midF = e.getValue(), midB = visB.get(key);
+
+                // 前向路径
                 List<MoveInfo> p1 = midF.buildPath();
+                // 后向路径，反向、反方向
                 List<MoveInfo> p2 = midB.buildPath();
                 Collections.reverse(p2);
-                for (MoveInfo mv : p2) mv = new MoveInfo(mv.blockIndex, opposite(mv.direction));
+                for (int i = 0; i < p2.size(); i++) {
+                    MoveInfo mv = p2.get(i);
+                    p2.set(i, new MoveInfo(mv.blockIndex, opposite(mv.direction)));
+                }
                 p1.addAll(p2);
                 System.out.println("Total depth=" + p1.size());
                 return p1;
@@ -138,11 +181,11 @@ public class BiDirectionalSolver {
     }
 
     private static Board.Direction opposite(Board.Direction d) {
-        return switch (d) {
-            case UP -> Board.Direction.DOWN;
-            case DOWN -> Board.Direction.UP;
-            case LEFT -> Board.Direction.RIGHT;
-            case RIGHT -> Board.Direction.LEFT;
-        };
+        switch (d) {
+            case UP:    return Board.Direction.DOWN;
+            case DOWN:  return Board.Direction.UP;
+            case LEFT:  return Board.Direction.RIGHT;
+            default:    return Board.Direction.LEFT;
+        }
     }
 }
