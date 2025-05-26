@@ -26,7 +26,7 @@ public class GameController  {
     //计时相关：
     private javax.swing.Timer countdownTimer;
     private int timeLimit;
-    private int remainingSeconds ;      // 5分钟（300秒）
+    private int remainingSeconds ;
     private boolean isTimerEnabled = false; // 是否启用倒计时
     private boolean firstMove_done = false;
 
@@ -61,7 +61,7 @@ public class GameController  {
 
 
         //可以move了之后
-        musicPlayer.play("data/bubble.wav",false);
+        musicPlayer.play("src/Game1/data/bubble.wav",false);
         getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
         gameframe.repaint();
 
@@ -193,8 +193,14 @@ public class GameController  {
         new SwingWorker<List<MoveInfo>, Void>() {
             @Override
             protected List<MoveInfo> doInBackground() {
-                // 使用 A* 求解
+
+                //这里要选算法了
+                //beam最快但是绕远路
+                //双向BFS比较快，路径很短，但是无法正确走完
+                //Astar慢，但是是最快路径
                 List<MoveInfo> solution = AStarSolver.solve(board);
+
+
                 System.out.println("AI solution length: " + solution.size());
                 return solution;
             }

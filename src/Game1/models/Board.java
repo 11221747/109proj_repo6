@@ -1,9 +1,8 @@
 package Game1.models;
 
 
-import Game1.Controllers.MusicPlayer;
-
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,15 +20,31 @@ public class Board implements Serializable {
     private transient Stack<Board> history = new Stack<>(); // 不序列化历史记录,
 
 
-
+    //构造方法：有一个给AI用
     public Board() {
         initializeBlocks();
         moves = 0;
     }
+    public Board(Board other) {
+        this.blocks = new ArrayList<>();
+        for (Block b : other.blocks) {
+            Block copy = new Block(
+                    b.getType(),
+                    b.getX(),
+                    b.getY(),
+                    b.getWidth(),
+                    b.getHeight()
+            );
+            this.blocks.add(copy);
+        }
+        this.moves = other.moves;
+        // 重新初始化历史，不继承其他状态
+        this.history = new Stack<>();
+    }
+
 
 
     //初始化棋盘：可以加上不同的难度，文件读取
-
     private void initializeBlocks() {
         initialize_Board_1();
 
@@ -153,22 +168,22 @@ public class Board implements Serializable {
         blocks = new ArrayList<>();
         //布局1.横刀立马
         // Cao Cao (2x2)
-        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2, Color.RED));
+        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2));
 
         // Guan Yu (2x1)
-        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 2, 2, 1, Color.BLUE));
+        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 2, 2, 1));
 
         // Generals (1x2)
-        blocks.add(new Block(Block.BlockType.GENERAL, 0, 0, 1, 2, Color.GREEN));
-        blocks.add(new Block(Block.BlockType.GENERAL, 0, 2, 1, 2, Color.GREEN));
-        blocks.add(new Block(Block.BlockType.GENERAL, 3, 0, 1, 2, Color.GREEN));
-        blocks.add(new Block(Block.BlockType.GENERAL, 3, 2, 1, 2, Color.GREEN));
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 0, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 2, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 0, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 2, 1, 2));
 
         // Soldiers (1x1)
-        blocks.add(new Block(Block.BlockType.SOLDIER, 1, 3, 1, 1, Color.YELLOW));
-        blocks.add(new Block(Block.BlockType.SOLDIER, 2, 3, 1, 1, Color.YELLOW));
-        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 4, 1, 1, Color.YELLOW));
-        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 4, 1, 1, Color.YELLOW));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 1, 3, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 2, 3, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 4, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 4, 1, 1));
     }
 
     //工具方法
@@ -185,7 +200,17 @@ public class Board implements Serializable {
     }
 
     //枚举类   javabean
-    public enum Direction { UP, DOWN, LEFT, RIGHT }
+
+    public enum Direction {
+        UP(0,-1), DOWN(0,1), LEFT(-1,0), RIGHT(1,0);
+
+        private final int dx, dy;
+        Direction(int dx, int dy) { this.dx = dx; this.dy = dy; }
+        public int dx() { return dx; }
+        public int dy() { return dy; }
+    }
+
+
 
     public List<Block> getBlocks() {
         return blocks;
@@ -216,3 +241,4 @@ public class Board implements Serializable {
         this.history = history;
     }
 }
+
