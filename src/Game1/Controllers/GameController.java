@@ -3,11 +3,11 @@ package Game1.Controllers;
 
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 
 
-import Game1.AI.*;
+import Game1.AI.AStarSolver;
+import Game1.AI.MoveInfo;
 import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
@@ -61,7 +61,7 @@ public class GameController  {
 
 
         //可以move了之后
-        musicPlayer.play("data/bubble.wav",false);
+        musicPlayer.play("src/Game1/data/bubble.wav",false);
         getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
         gameframe.repaint();
 
@@ -222,7 +222,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(250);
+                                Thread.sleep(500);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }

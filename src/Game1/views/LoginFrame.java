@@ -29,7 +29,7 @@ public class LoginFrame extends JFrame {
         this.gameController = gameController;
         this.musicPlayer=  musicPlayer;
         initUI();
-        musicPlayer.play("data/groove.wav",true); // 循环播放
+        musicPlayer.play("src/Game1/data/groove.wav",true); // 循环播放
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -93,7 +93,7 @@ public class LoginFrame extends JFrame {
 
 
 
-       ImageIcon originalIcon = new ImageIcon("saves/loginB.jpg");
+       ImageIcon originalIcon = new ImageIcon("src/Game1/pic/loginB.jpg");
         Image originalImage = originalIcon.getImage();
 
         // 保持原始比

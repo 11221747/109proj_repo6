@@ -2,6 +2,7 @@ package Game1.models;
 
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +25,7 @@ public class Board implements Serializable {
         initializeBlocks();
         moves = 0;
     }
-
-
     public Board(Board other) {
-        // 复制块列表
         this.blocks = new ArrayList<>();
         for (Block b : other.blocks) {
             Block copy = new Block(
@@ -35,8 +33,7 @@ public class Board implements Serializable {
                     b.getX(),
                     b.getY(),
                     b.getWidth(),
-                    b.getHeight(),
-                    b.getColor()
+                    b.getHeight()
             );
             this.blocks.add(copy);
         }
@@ -46,8 +43,8 @@ public class Board implements Serializable {
     }
 
 
-    //初始化棋盘：可以加上不同的难度，文件读取
 
+    //初始化棋盘：可以加上不同的难度，文件读取
     private void initializeBlocks() {
         initialize_Board_1();
 
@@ -171,22 +168,22 @@ public class Board implements Serializable {
         blocks = new ArrayList<>();
         //布局1.横刀立马
         // Cao Cao (2x2)
-        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2, Color.RED));
+        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2));
 
         // Guan Yu (2x1)
-        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 2, 2, 1, Color.BLUE));
+        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 2, 2, 1));
 
         // Generals (1x2)
-        blocks.add(new Block(Block.BlockType.GENERAL, 0, 0, 1, 2, Color.GREEN));
-        blocks.add(new Block(Block.BlockType.GENERAL, 0, 2, 1, 2, Color.GREEN));
-        blocks.add(new Block(Block.BlockType.GENERAL, 3, 0, 1, 2, Color.GREEN));
-        blocks.add(new Block(Block.BlockType.GENERAL, 3, 2, 1, 2, Color.GREEN));
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 0, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 2, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 0, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 2, 1, 2));
 
         // Soldiers (1x1)
-        blocks.add(new Block(Block.BlockType.SOLDIER, 1, 3, 1, 1, Color.YELLOW));
-        blocks.add(new Block(Block.BlockType.SOLDIER, 2, 3, 1, 1, Color.YELLOW));
-        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 4, 1, 1, Color.YELLOW));
-        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 4, 1, 1, Color.YELLOW));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 1, 3, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 2, 3, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 4, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 4, 1, 1));
     }
 
     //工具方法

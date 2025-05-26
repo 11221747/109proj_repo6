@@ -5,6 +5,7 @@ import javax.swing.*;
 import Game1.Controllers.GameController;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 
 import Game1.Controllers.MusicPlayer;
 import Game1.Controllers.UserController;
@@ -37,6 +38,8 @@ public class GameFrame extends JFrame {
         setResizable(false);
         setSize(591, 550);////有点矮，如果把按钮移到左边就不矮了
         JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setLayout(new BorderLayout()); // 添加布局管理器
+
         layeredPane.setPreferredSize(new Dimension(591, 550));
 
         setContentPane(layeredPane);
@@ -49,9 +52,9 @@ public class GameFrame extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    private void addBackground(JLayeredPane layeredPane) {
+    protected void addBackground(JLayeredPane layeredPane) {
         try {
-            String imagePath = "saves/gameBackground.png";
+            String imagePath = "src/Game1/pic/gameBackground.png";
             ImageIcon originalIcon = new ImageIcon(imagePath);
 
             int imgWidth = originalIcon.getIconWidth();
@@ -77,6 +80,7 @@ public class GameFrame extends JFrame {
             JLabel background = new JLabel(new ImageIcon(scaledImage)) {
                 @Override
                 public void paintComponent(Graphics g) {
+
                     int y = (getHeight() - scaledHeight) / 2;
                     g.drawImage(scaledImage, 0, y, this);
                 }
@@ -308,8 +312,8 @@ public class GameFrame extends JFrame {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            // Draw grid
-            g.setColor(Color.DARK_GRAY);
+            // 绘制背景网格
+            g.setColor(new Color(200, 200, 200, 150)); // 半透明灰色
             for (int i = 0; i <= Board.ROWS; i++) {
                 g.drawLine(0, i * CELL_SIZE, BOARD_WIDTH, i * CELL_SIZE);
             }
@@ -317,11 +321,6 @@ public class GameFrame extends JFrame {
                 g.drawLine(j * CELL_SIZE, 0, j * CELL_SIZE, BOARD_HEIGHT);
             }
 
-            // Draw exit
-            g.setColor(Color.WHITE);
-            g.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-            g.setColor(Color.RED);
-            g.drawString("EXIT", 2 * CELL_SIZE + 10, 4 * CELL_SIZE + 20);
 
             // Draw blocks
             for (Block block : controller.getBoard().getBlocks()) {
@@ -329,23 +328,27 @@ public class GameFrame extends JFrame {
                 int y = block.getY() * CELL_SIZE;
                 int width = block.getWidth() * CELL_SIZE;
                 int height = block.getHeight() * CELL_SIZE;
+                // 绘制贴图
+                BufferedImage texture = block.getTexture();
 
-                g.setColor(block.getColor());
-                g.fillRect(x, y, width, height);
+                    g.drawImage(texture, x, y, width, height, this);
 
-                g.setColor(Color.BLACK);
-                g.drawRect(x, y, width, height);
-
-                // Draw block type
-                String type = "";
-                switch (block.getType()) {
-                    case CAO_CAO: type = "曹操"; break;
-                    case GUAN_YU: type = "关羽"; break;
-                    case GENERAL: type = "将军"; break;
-                    case SOLDIER: type = "兵"; break;
+                // 绘制选中框
+                if (block == selectedBlock) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setColor(Color.BLUE);
+                    g2d.setStroke(new BasicStroke(3));
+                    g2d.drawRect(x, y, width, height);
+                    g2d.dispose();
                 }
 
-                g.drawString(type, x + width/2 - 10, y + height/2 + 5);
+                // 绘制出口
+                Graphics2D exitG = (Graphics2D) g.create();
+                exitG.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                exitG.setColor(new Color(10, 121, 84, 221));
+                exitG.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                exitG.dispose();
+
             }
 
             // Highlight selected block
@@ -356,7 +359,7 @@ public class GameFrame extends JFrame {
                 int height = selectedBlock.getHeight() * CELL_SIZE;
 
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setColor(Color.YELLOW);
+                g2.setColor(Color.orange);
                 g2.setStroke(new BasicStroke(3));
                 g2.drawRect(x, y, width, height);
             }
