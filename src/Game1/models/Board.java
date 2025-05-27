@@ -2,7 +2,6 @@ package Game1.models;
 
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +21,7 @@ public class Board implements Serializable {
 
     //构造方法：有一个给AI用
     public Board() {
-        initializeBlocks();
+        initializeBoard();
         moves = 0;
     }
     public Board(Board other) {
@@ -45,10 +44,16 @@ public class Board implements Serializable {
 
 
     //初始化棋盘：可以加上不同的难度，文件读取
-    private void initializeBlocks() {
+    public void initializeBoard(int level) {
+        if(level == 1){initialize_Board_1();}
+        else if(level == 2){initialize_Board_2();}
+        else if(level == 3){initialize_Board_3();}
+
+    }
+
+    //默认
+    public void initializeBoard() {
         initialize_Board_1();
-
-
     }
 
 
@@ -186,6 +191,43 @@ public class Board implements Serializable {
         blocks.add(new Block(Block.BlockType.SOLDIER, 3, 4, 1, 1));
     }
 
+    public void initialize_Board_2() {
+        blocks = new ArrayList<>();
+        // 布局2.层层设防
+        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2));
+
+        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 3, 2, 1));
+
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 0, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 0, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 2, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 2, 1, 2));
+
+        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 4, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 1, 4, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 2, 4, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 4, 1, 1));
+    }
+
+    public void initialize_Board_3() {
+        blocks = new ArrayList<>();
+        // 布局3.兵分三路
+        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2));
+
+        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 4, 2, 1));
+
+        blocks.add(new Block(Block.BlockType.GENERAL, 1, 2, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 2, 2, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 3, 2, 1, 2));
+        blocks.add(new Block(Block.BlockType.GENERAL, 0, 2, 1, 2));
+
+        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 0, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 0, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 0, 1, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 3, 1, 1, 1));
+
+    }
+
     //工具方法
     public void clearHistory(){
         history.clear();
@@ -195,8 +237,14 @@ public class Board implements Serializable {
 
     //重置方法
     public void reset() {
-        initializeBlocks();
+        initializeBoard();
         moves = 0;
+    }
+    public void reset(int level){
+        if (level == 1) initialize_Board_1();
+        else if (level == 2)initialize_Board_2();
+        else if (level == 3) initialize_Board_3();
+
     }
 
     //枚举类   javabean

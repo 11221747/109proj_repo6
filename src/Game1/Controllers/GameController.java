@@ -12,11 +12,12 @@ import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
 import Game1.views.GameFrame;
+import Game1.views.LoginFrame;
 
 import javax.swing.*;
 
 
-public class GameController  {
+public class GameController {
     private static final String SAVE_DIR = "saves/";
     private static final String SAVE_EXT = ".klotski";
 
@@ -26,13 +27,19 @@ public class GameController  {
     //计时相关：
     private javax.swing.Timer countdownTimer;
     private int timeLimit;
-    private int remainingSeconds ;
+    private int remainingSeconds;
     private boolean isTimerEnabled = false; // 是否启用倒计时
     private boolean firstMove_done = false;
 
     private MusicPlayer musicPlayer;
 
     private GameFrame gameframe;
+    private int level;
+    private LoginFrame loginFrame;
+
+    public void setLoginFrame(LoginFrame loginFrame) {
+        this.loginFrame = loginFrame;
+    }
 
 
     public void setGameframe(GameFrame gameframe) {
@@ -41,13 +48,12 @@ public class GameController  {
     }
 
 
-
     //构造方法和设置用户
     public GameController() {
         this.board = new Board();
         this.musicPlayer = new MusicPlayer();
-    }
 
+    }
 
 
     public void moveBlock(Board.Direction direction) {
@@ -61,18 +67,17 @@ public class GameController  {
 
 
         //可以move了之后
-        musicPlayer.play("src/Game1/data/bubble.wav",false);
+        musicPlayer.play("src/Game1/data/bubble.wav", false);
         getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
         gameframe.repaint();
 
         //判断胜利直接终止
         if (isWin()) {
             gameframe.sendMessage_Win();
+
         }
 
     }
-
-
 
 
     //方法区
@@ -91,14 +96,13 @@ public class GameController  {
                 //路径--一个用户一个文件--后缀
                 new FileOutputStream(SAVE_DIR + currentUser.getUsername() + SAVE_EXT))) {
             //保存棋盘，用户名
-            oos.writeObject(   new GameState(board, currentUser.getUsername(),  getRemainingSeconds()  )   );
+            oos.writeObject(new GameState(board, currentUser.getUsername(), getRemainingSeconds(), getLevel() , isTimerEnabled));
             return true;
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
-
 
 
     //读取存档
@@ -118,12 +122,11 @@ public class GameController  {
             //读取后设置的参数：
             getCountdownTimer().stop();
             this.board = state.getBoard();
-
+            setLevel(state.getLevel());
             setFirstMove_done(false);
-            setRemainingSeconds(    state.getRemainingSeconds()  );
+            setRemainingSeconds(state.getRemainingSeconds());
+            setTimerEnabled(state.isTimer_flag());
             initTimer(remainingSeconds);
-
-
 
 
             return true;
@@ -152,7 +155,7 @@ public class GameController  {
     }
 
     //有关时间：
-    private void initTimer(int initialTime ) {
+    private void initTimer(int initialTime) {
         setRemainingSeconds(initialTime);        //todo     这个要设置为识别的剩余时间
 
         countdownTimer = new javax.swing.Timer(1000, e -> {
@@ -176,14 +179,6 @@ public class GameController  {
             countdownTimer.start();
 
         }
-    }
-
-    public void countdown_GoOn(){
-
-    }
-
-    public void countdown_Stop() {
-        countdownTimer.stop();
     }
 
 
@@ -222,7 +217,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(500);
+                                Thread.sleep(50);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
@@ -236,9 +231,28 @@ public class GameController  {
     }
 
 
+    //选关相关
+    public void initialize_Board() {
+        getBoard().initializeBoard(level);
+    }
+
+    public void startLevel(){
+        loginFrame.openGameFrame(level);
+    }
+
 
 
     //一些工具javabean
+
+    public void countdown_GoOn() {
+        countdownTimer.start();
+    }
+
+    public void countdown_Stop() {
+        countdownTimer.stop();
+    }
+
+
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }
@@ -248,7 +262,8 @@ public class GameController  {
     }
 
     public void resetGame() {
-        board.reset();
+        board.reset(level);
+        getBoard().setMoves(0);
         getBoard().clearHistory();
 
     }
@@ -293,6 +308,15 @@ public class GameController  {
     public void setFirstMove_done(boolean firstMove_done) {
         this.firstMove_done = firstMove_done;
     }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
 }
 
 

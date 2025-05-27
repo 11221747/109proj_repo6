@@ -25,18 +25,21 @@ public class GameFrame extends JFrame {
     private UserController userController;
     private GameController gameController;
     private MusicPlayer musicPlayer;
-
+    private int level;
 
     private Block selectedBlock;
 
     //构造方法
-    public GameFrame(GameController controller) {
+    public GameFrame(GameController controller, int level) {
         this.controller = controller;
-        this.userController= userController;
+        this.level = level;
+
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Klotski Puzzle");
+        //todo:加个显示level的组件   在loadgames之后刷新关卡数
+
         setResizable(false);
-        setSize(591, 550);////有点矮，如果把按钮移到左边就不矮了
+        setSize(591, 550);//有点矮，如果把按钮移到左边就不矮了
         JLayeredPane layeredPane = new JLayeredPane();
         layeredPane.setLayout(new BorderLayout()); // 添加布局管理器
 
@@ -240,6 +243,14 @@ public class GameFrame extends JFrame {
         this.timeBar = timeBar;
     }
 
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
 
     private class BoardPanel extends JPanel {
         public BoardPanel() {
@@ -376,6 +387,7 @@ public class GameFrame extends JFrame {
                 "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves!");
 
         getController().resetGame();
+
         setSelectedBlock(null);
         SwingUtilities.invokeLater(this::repaint);
     }

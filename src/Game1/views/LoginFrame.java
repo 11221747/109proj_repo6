@@ -147,9 +147,11 @@ public class LoginFrame extends JFrame {
                 if (UserStorage.login(usernameField.getText(), passwordField.getText())) {
                     User u = new User(usernameField.getText(), passwordField.getText());
                     gameController.setCurrentUser(u);
+                    gameController.setLoginFrame(this);
 
                     setTimerMethod();
-                    openGameFrame();            //开始游戏
+                    new LevelSelectFrame(gameController).setVisible(true);
+
                 }else{
                     JOptionPane.showMessageDialog(null, "登录失败，账户或密码错误！", "账户或密码错误窗口", JOptionPane.INFORMATION_MESSAGE
                     );
@@ -183,12 +185,20 @@ public class LoginFrame extends JFrame {
 //        panel.add(guestButton);
 //        add(panel);
 
-    private void openGameFrame() {
-        GameFrame gameFrame = new GameFrame(gameController);
+    public void openGameFrame() {
+        GameFrame gameFrame = new GameFrame(gameController, 1);
         gameController.setGameframe(gameFrame);
         gameFrame.setVisible(true);
         dispose();
     }
+
+    public void openGameFrame(int level) {
+        GameFrame gameFrame = new GameFrame(gameController, gameController.getLevel());
+        gameController.setGameframe(gameFrame);
+        gameFrame.setVisible(true);
+        dispose();
+    }
+
 
     //设置选择时间模式
     private void setTimerMethod(){
@@ -201,6 +211,7 @@ public class LoginFrame extends JFrame {
                 null,
                 options,
                 options[0]);
+
 
         if (choice == 1) { // 选择限时模式
             String time = (String)JOptionPane.showInputDialog(this,
