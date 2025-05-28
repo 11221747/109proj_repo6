@@ -96,7 +96,7 @@ public class GameController {
                 //路径--一个用户一个文件--后缀
                 new FileOutputStream(SAVE_DIR + currentUser.getUsername() + SAVE_EXT))) {
             //保存棋盘，用户名
-            oos.writeObject(new GameState(board, currentUser.getUsername(), getRemainingSeconds(), getLevel() , isTimerEnabled));
+            oos.writeObject(   new GameState(board, currentUser.getUsername(), getRemainingSeconds(), getLevel() , isTimerEnabled)   );
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,7 +108,7 @@ public class GameController {
     //读取存档
     public boolean loadGame() {
         if (currentUser == null) return false;
-        //getBoard().clearHistory();     //清除历史
+        getBoard().clearHistory();     //清除历史
 
         //载入文件
         File file = new File(SAVE_DIR + currentUser.getUsername() + SAVE_EXT);
@@ -124,6 +124,7 @@ public class GameController {
             this.board = state.getBoard();
             setLevel(state.getLevel());
             setFirstMove_done(false);
+
             setRemainingSeconds(state.getRemainingSeconds());
             setTimerEnabled(state.isTimer_flag());
             initTimer(remainingSeconds);
@@ -156,11 +157,11 @@ public class GameController {
 
     //有关时间：
     private void initTimer(int initialTime) {
-        setRemainingSeconds(initialTime);        //todo     这个要设置为识别的剩余时间
+        setRemainingSeconds(initialTime);
 
         countdownTimer = new javax.swing.Timer(1000, e -> {
             remainingSeconds--;
-            gameframe.updateTimerDisplay(remainingSeconds);     //更新时间条
+            gameframe.updateTimerDisplay( getRemainingSeconds()  );     //更新时间条
 
             if (remainingSeconds <= 0) {
                 countdownTimer.stop();
@@ -169,14 +170,15 @@ public class GameController {
             }
 
         });
+
+        setCountdownTimer(  countdownTimer  );
     }
 
     // 启动/停止倒计时
     //第一步移动了再启动
     public void countdown_Start() {
-        if (isTimerEnabled && !countdownTimer.isRunning()) {
-
-            countdownTimer.start();
+        if (isTimerEnabled && ! getCountdownTimer().isRunning()) {
+            getCountdownTimer().start();
 
         }
     }
@@ -244,13 +246,6 @@ public class GameController {
 
     //一些工具javabean
 
-    public void countdown_GoOn() {
-        countdownTimer.start();
-    }
-
-    public void countdown_Stop() {
-        countdownTimer.stop();
-    }
 
 
     public void setCurrentUser(User user) {

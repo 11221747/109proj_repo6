@@ -22,6 +22,7 @@ public class GameState implements Serializable {
         this.username = username;
         this.remainingSeconds = remainingSeconds;
         this.level = level;
+        this.timer_flag = timer_flag;
     }
 
 
