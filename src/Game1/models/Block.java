@@ -20,7 +20,7 @@ public class Block implements Serializable {
     private final int height;
     private Color color;
 
-    private BufferedImage texture; // 新增纹理属性
+    private transient BufferedImage texture; // 新增纹理属性
     public Block(BlockType type, int x, int y, int width, int height) {
         this.type = type;
         this.x = x;

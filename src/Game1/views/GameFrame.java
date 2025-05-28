@@ -90,7 +90,7 @@ public class GameFrame extends JFrame {
             layeredPane.add(background, JLayeredPane.DEFAULT_LAYER);
 
         } catch (Exception e) {
-            System.err.println("加载背景图片失败: " + e.getMessage());
+//            System.err.println("加载背景图片失败: " + e.getMessage());
             layeredPane.setBackground(Color.CYAN);
         }
     }
@@ -207,15 +207,37 @@ public class GameFrame extends JFrame {
         layeredPane.add(timeBar, JLayeredPane.PALETTE_LAYER);
 
 
-        JButton aiSolveBtn = new JButton("AI solver");
+        // 创建AI选择下拉框
+        String[] aiAlgorithms = {"A* Search(优先40s)", "Beam Search (2s多步)", "Bidirectional BFS (快，步少，不一定成功)", "BFS (基础)"};
+        JComboBox<String> aiComboBox = new JComboBox<>(aiAlgorithms);
+        aiComboBox.setBounds(65, 450, 150, 25); // 调整宽度以显示完整名称
+
+        // AI执行按钮
+        JButton aiSolveBtn = new JButton("AI求解");
+        aiSolveBtn.setBounds(65, 480, 150, 30);
+
+        // 添加监听器
         aiSolveBtn.addActionListener(e -> {
-            controller.autoSolve();
+            String selectedAlgorithm = (String) aiComboBox.getSelectedItem();
+            String algorithmKey = "";
+
+            // 映射UI显示名称到算法标识
+            if (selectedAlgorithm.startsWith("AStar")) {
+                algorithmKey = "AStar";
+            } else if (selectedAlgorithm.startsWith("Beam")) {
+                algorithmKey = "Beam";
+            } else if (selectedAlgorithm.startsWith("Bidirectional")) {
+                algorithmKey = "BiDirectional";
+            } else {
+                algorithmKey = "BFS";
+            }
+
+            controller.autoSolve(algorithmKey);
         });
 
+         // 添加到界面
+        layeredPane.add(aiComboBox, JLayeredPane.PALETTE_LAYER);
         layeredPane.add(aiSolveBtn, JLayeredPane.PALETTE_LAYER);
-        aiSolveBtn.setBounds(65, 450, btnWidth, btnHeight);
-
-
     }
 
     public void updateTimerDisplay(int seconds) {
@@ -345,7 +367,7 @@ public class GameFrame extends JFrame {
                 // 绘制出口
                 Graphics2D exitG = (Graphics2D) g.create();
                 exitG.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-                exitG.setColor(new Color(10, 121, 84, 221));
+                exitG.setColor(new Color(253, 229, 45, 87));
                 exitG.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 exitG.dispose();
 

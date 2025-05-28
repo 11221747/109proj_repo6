@@ -3,155 +3,248 @@ package Game1.AI;
 import Game1.models.Board;
 import Game1.models.Block;
 
+import java.awt.Point;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * ï¿½ï¿½ï¿½ß³ï¿½ A* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ */
 public class AStarSolver {
-    private static class State {
-        final int[][] grid;
-        final int g;
-        final int h;
-        final int f;
-        final State parent;
-        final MoveInfo move;
-
-        State(int[][] grid, int g, State parent, MoveInfo move) {
-            this.grid = grid;
-            this.g = g;
-            this.h = calcHeuristic(grid);
-            this.f = this.g + this.h;
-            this.parent = parent;
-            this.move = move;
-        }
-
-        private int calcHeuristic(int[][] grid) {
-            int targetR = 3, targetC = 1;
-            int minR = Integer.MAX_VALUE, minC = Integer.MAX_VALUE;
-            for (int r = 0; r < grid.length; r++) {
-                for (int c = 0; c < grid[0].length; c++) {
-                    if (grid[r][c] == caoIndex) {
-                        minR = Math.min(minR, r);
-                        minC = Math.min(minC, c);
-                    }
-                }
-            }
-            if (minR==Integer.MAX_VALUE) return Integer.MAX_VALUE;
-            return Math.abs(minR - targetR) + Math.abs(minC - targetC);
-        }
-
-        String key() {
-            StringBuilder sb = new StringBuilder();
-            for (int[] row : grid) {
-                for (int v : row) sb.append(v).append(',');
-                sb.append(';');
-            }
-            return sb.toString();
-        }
-    }
-
-    private static int caoIndex;
+    private static final int EXIT_R = 3, EXIT_C = 1;
+    private static int R, C, caoIdx;
+    private static List<Block> blocks;
+    private static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
+    private static final AtomicInteger processed = new AtomicInteger(0);
+    private static final AtomicInteger maxDepth = new AtomicInteger(0);
 
     public static List<MoveInfo> solve(Board board) {
-        int R = Board.ROWS, C = Board.COLS;
-        List<Block> blocks = new ArrayList<>(board.getBlocks());
-        // ¶¨Î»²Ü²Ù¿éË÷Òý
+        R = Board.ROWS;
+        C = Board.COLS;
+        blocks = board.getBlocks();
+
+        caoIdx = -1;
         for (int i = 0; i < blocks.size(); i++) {
             if (blocks.get(i).getType() == Block.BlockType.CAO_CAO) {
-                caoIndex = i;
+                caoIdx = i;
                 break;
             }
         }
-        int[][] grid0 = new int[R][C];
-        for (int[] row : grid0) Arrays.fill(row, -1);
-        for (int i = 0; i < blocks.size(); i++) {
-            Block b = blocks.get(i);
-            for (int dr = 0; dr < b.getHeight(); dr++) {
-                for (int dc = 0; dc < b.getWidth(); dc++) {
-                    grid0[b.getY() + dr][b.getX() + dc] = i;
-                }
-            }
+        if (caoIdx == -1) {
+            System.out.println("Î´ï¿½Òµï¿½ï¿½Ü²Ù·ï¿½ï¿½é£¡");
+            return Collections.emptyList();
         }
 
-        PriorityQueue<State> open = new PriorityQueue<>(Comparator.comparingInt(s -> s.f));
-        Map<String, Integer> bestG = new HashMap<>();
+        State start = State.fromBoard();
+        PriorityBlockingQueue<State> open = new PriorityBlockingQueue<>();
+        ConcurrentHashMap<StateKey, Integer> visited = new ConcurrentHashMap<>();
 
-        State start = new State(grid0, 0, null, null);
-        open.add(start);
-        bestG.put(start.key(), 0);
+        open.offer(start);
+        visited.put(start.key, start.g);
 
-        while (!open.isEmpty()) {
-            State cur = open.poll();
-            if (cur.h == 0) return buildPath(cur);
+        AtomicBoolean solved = new AtomicBoolean(false);
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        CompletionService<List<MoveInfo>> completionService = new ExecutorCompletionService<>(executor);
 
-            for (int i = 0; i < blocks.size(); i++) {
-                for (Board.Direction dir : Board.Direction.values()) {
-                    if (!canMove(cur.grid, blocks.get(i), i, dir)) continue;
-                    int[][] ng = moveGrid(cur.grid, blocks.get(i), i, dir);
-                    State nxt = new State(ng, cur.g + 1, cur, new MoveInfo(i, dir));
-                    String key = nxt.key();
-                    if (!bestG.containsKey(key) || nxt.g < bestG.get(key)) {
-                        bestG.put(key, nxt.g);
-                        open.add(nxt);
+        Runnable worker = () -> {
+            while (!solved.get()) {
+                State cur;
+                try {
+                    cur = open.poll(50, TimeUnit.MILLISECONDS);
+                    if (cur == null) continue;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+
+                int count = processed.incrementAndGet();
+                if (cur.g > maxDepth.get()) maxDepth.set(cur.g);
+                if (count % 100000 == 0) {
+                    System.out.printf("ï¿½ß³ï¿½[%s] ï¿½Ñ´ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½: %d, ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: %d, openï¿½ï¿½ï¿½Ð´ï¿½Ð¡: %d, visited×´Ì¬ï¿½ï¿½: %d%n",
+                            Thread.currentThread().getName(), count, maxDepth.get(), open.size(), visited.size());
+                }
+
+                if (cur.h == 0) {
+                    if (solved.compareAndSet(false, true)) {
+                        completionService.submit(() -> reconstructPath(cur));
+                    }
+                    return;
+                }
+
+                for (int idx = 0; idx < blocks.size(); idx++) {
+                    for (Board.Direction dir : Board.Direction.values()) {
+                        if (!cur.canMove(idx, dir)) continue;
+                        if (cur.isReverseMove(idx, dir)) continue;
+
+                        State ns = cur.move(idx, dir);
+                        Integer prevG = visited.get(ns.key);
+                        if (prevG == null || ns.g < prevG) {
+                            visited.put(ns.key, ns.g);
+                            open.offer(ns);
+                        }
                     }
                 }
             }
+        };
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executor.execute(worker);
         }
-        return Collections.emptyList();
+
+        try {
+            Future<List<MoveInfo>> result = completionService.take();
+            executor.shutdownNow();
+            return result.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
     }
 
-    private static boolean canMove(int[][] grid, Block b, int idx, Board.Direction dir) {
-        int dx=0, dy=0;
-        switch (dir) {
-            case UP -> dy=-1;
-            case DOWN -> dy=1;
-            case LEFT -> dx=-1;
-            case RIGHT -> dx=1;
-        }
-        int R=grid.length, C=grid[0].length;
-        List<int[]> cells = new ArrayList<>();
-        for (int r=0;r<R;r++) for (int c=0;c<C;c++) if (grid[r][c]==idx) cells.add(new int[]{r,c});
-        for (int[] cell:cells) {
-            int nr=cell[0]+dy, nc=cell[1]+dx;
-            if (nr<0||nr>=R||nc<0||nc>=C) return false;
-            if (grid[nr][nc]!=-1 && grid[nr][nc]!=idx) return false;
-        }
-        return true;
-    }
-
-    private static int[][] moveGrid(int[][] grid, Block b, int idx, Board.Direction dir) {
-        int R=grid.length, C=grid[0].length;
-        int[][] ng = new int[R][C];
-        for (int r=0;r<R;r++) System.arraycopy(grid[r],0,ng[r],0,C);
-        int dx=0, dy=0;
-        switch (dir) {
-            case UP -> dy=-1;
-            case DOWN -> dy=1;
-            case LEFT -> dx=-1;
-            case RIGHT -> dx=1;
-        }
-        List<int[]> cells = new ArrayList<>();
-        for (int r=0;r<R;r++) for (int c=0;c<C;c++) if (ng[r][c]==idx) cells.add(new int[]{r,c});
-        int minR= Integer.MAX_VALUE, minC=Integer.MAX_VALUE;
-        for (int[] cell:cells) {
-            minR=Math.min(minR,cell[0]);
-            minC=Math.min(minC,cell[1]);
-        }
-        // Çå³ýÔ­Î»ÖÃ
-        for (int[] cell:cells) ng[cell[0]][cell[1]]=-1;
-        // Ìî³äÐÂÎ»ÖÃ
-        for (int dr=0;dr<b.getHeight();dr++) {
-            for (int dc=0;dc<b.getWidth();dc++) {
-                ng[minR+dy+dr][minC+dx+dc] = idx;
-            }
-        }
-        return ng;
-    }
-
-    private static List<MoveInfo> buildPath(State node) {
+    private static List<MoveInfo> reconstructPath(State state) {
         LinkedList<MoveInfo> path = new LinkedList<>();
-        while (node.parent != null) {
-            path.addFirst(node.move);
-            node = node.parent;
+        while (state.move != null) {
+            path.addFirst(state.move);
+            state = state.parent;
         }
         return path;
+    }
+
+    private static class State implements Comparable<State> {
+        final int g, h, f;
+        final int[][] grid;
+        final List<List<Point>> cells;
+        final MoveInfo move;
+        final State parent;
+        final StateKey key;
+
+        private State(int g, int[][] grid, List<List<Point>> cells, MoveInfo move, State parent) {
+            this.g = g;
+            this.grid = grid;
+            this.cells = cells;
+            this.move = move;
+            this.parent = parent;
+            this.h = calcHeuristic();
+            this.f = g + h;
+            this.key = new StateKey(grid);
+        }
+
+        static State fromBoard() {
+            int[][] g0 = new int[R][C];
+            for (int[] row : g0) Arrays.fill(row, -1);
+            List<List<Point>> c0 = new ArrayList<>();
+            for (int i = 0; i < blocks.size(); i++) c0.add(new ArrayList<>());
+            for (int i = 0; i < blocks.size(); i++) {
+                Block b = blocks.get(i);
+                for (int dy = 0; dy < b.getHeight(); dy++) {
+                    for (int dx = 0; dx < b.getWidth(); dx++) {
+                        int x = b.getX() + dx;
+                        int y = b.getY() + dy;
+                        g0[y][x] = i;
+                        c0.get(i).add(new Point(x, y));
+                    }
+                }
+            }
+            return new State(0, g0, c0, null, null);
+        }
+
+        private int calcHeuristic() {
+            List<Point> caoCells = cells.get(caoIdx);
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
+            for (Point p : caoCells) {
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+            }
+            return Math.abs(minY - EXIT_R) + Math.abs(minX - EXIT_C);
+        }
+
+        boolean canMove(int idx, Board.Direction dir) {
+            int dx = 0, dy = 0;
+            switch (dir) {
+                case UP -> dy = -1;
+                case DOWN -> dy = 1;
+                case LEFT -> dx = -1;
+                case RIGHT -> dx = 1;
+            }
+            for (Point p : cells.get(idx)) {
+                int nx = p.x + dx, ny = p.y + dy;
+                if (nx < 0 || nx >= C || ny < 0 || ny >= R) return false;
+                int occ = grid[ny][nx];
+                if (occ != -1 && occ != idx) return false;
+            }
+            return true;
+        }
+
+        boolean isReverseMove(int idx, Board.Direction dir) {
+            if (parent == null || move == null) return false;
+            if (move.blockIndex == idx) {
+                return switch (move.direction) {
+                    case UP -> dir == Board.Direction.DOWN;
+                    case DOWN -> dir == Board.Direction.UP;
+                    case LEFT -> dir == Board.Direction.RIGHT;
+                    case RIGHT -> dir == Board.Direction.LEFT;
+                };
+            }
+            return false;
+        }
+
+        State move(int idx, Board.Direction dir) {
+            int dx = 0, dy = 0;
+            switch (dir) {
+                case UP -> dy = -1;
+                case DOWN -> dy = 1;
+                case LEFT -> dx = -1;
+                case RIGHT -> dx = 1;
+            }
+            int gNew = g + 1;
+            int[][] ng = new int[R][C];
+            for (int y = 0; y < R; y++) System.arraycopy(grid[y], 0, ng[y], 0, C);
+            List<List<Point>> nc = new ArrayList<>();
+            for (List<Point> lst : cells) {
+                List<Point> cp = new ArrayList<>();
+                for (Point p : lst) cp.add(new Point(p));
+                nc.add(cp);
+            }
+            for (Point p : nc.get(idx)) ng[p.y][p.x] = -1;
+            for (Point p : nc.get(idx)) {
+                int nx = p.x + dx, ny = p.y + dy;
+                ng[ny][nx] = idx;
+            }
+            for (Point p : nc.get(idx)) p.translate(dx, dy);
+            return new State(gNew, ng, nc, new MoveInfo(idx, dir), this);
+        }
+
+        @Override
+        public int compareTo(State o) {
+            return Integer.compare(this.f, o.f);
+        }
+    }
+
+    private static class StateKey {
+        private final byte[] data;
+
+        StateKey(int[][] grid) {
+            data = new byte[R * C];
+            for (int y = 0; y < R; y++) {
+                for (int x = 0; x < C; x++) {
+                    data[y * C + x] = (byte) (grid[y][x] + 1);
+                }
+            }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof StateKey)) return false;
+            StateKey other = (StateKey) o;
+            return Arrays.equals(data, other.data);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(data);
+        }
     }
 }

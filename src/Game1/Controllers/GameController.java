@@ -3,11 +3,12 @@ package Game1.Controllers;
 
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
-import Game1.AI.AStarSolver;
-import Game1.AI.MoveInfo;
+import Game1.AI.*;
 import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
@@ -189,19 +190,31 @@ public class GameController  {
 
     //AI相关
     // AI 自动求解
-    public void autoSolve() {
+    public void autoSolve(String algorithm) {
         new SwingWorker<List<MoveInfo>, Void>() {
             @Override
             protected List<MoveInfo> doInBackground() {
+                List<MoveInfo> solution = Collections.emptyList();
 
-                //这里要选算法了
-                //beam最快但是绕远路
-                //双向BFS比较快，路径很短，但是无法正确走完
-                //Astar慢，但是是最快路径
-                List<MoveInfo> solution = AStarSolver.solve(board);
+                // 根据选择的算法调用对应的求解器
+                switch (algorithm) {
+                    case "AStar":
+                        solution = AStarSolver.solve(board);
+                        break;
+                    case "Beam":
+                        solution = BeamSolver.solve(board);
+                        break;
+                    case "BiDirectional":
+                        solution = BiDirectionalSolver.solve(board);
+                        break;
+                    case "BFS":
+                        solution = BFSolver.solve(board);
+                        break;
+                    default:
+                        solution = AStarSolver.solve(board); // 默认使用A*
+                }
 
-
-                System.out.println("AI solution length: " + solution.size());
+                System.out.println(algorithm + " solution length: " + solution.size());
                 return solution;
             }
 
@@ -211,8 +224,13 @@ public class GameController  {
                     List<MoveInfo> solution = get();
                     if (solution == null || solution.isEmpty()) {
                         System.out.println("No solution found or empty list.");
+                        JOptionPane.showMessageDialog(gameframe,
+                                "AI求解失败，请尝试其他算法！",
+                                "提示",
+                                JOptionPane.WARNING_MESSAGE);
                         return;
                     }
+
                     // 执行动画
                     new Thread(() -> {
                         for (MoveInfo move : solution) {
@@ -222,20 +240,23 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(500);
+                                Thread.sleep(250); // 控制动画速度
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
                         }
                     }).start();
+
                 } catch (Exception e) {
                     e.printStackTrace();
+                    JOptionPane.showMessageDialog(gameframe,
+                            "AI求解时发生错误: " + e.getMessage(),
+                            "错误",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();
     }
-
-
 
 
     //一些工具javabean
