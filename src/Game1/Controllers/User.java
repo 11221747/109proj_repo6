@@ -9,10 +9,12 @@ public class User implements Serializable {
 
     private String username;
     private String password;
+    private boolean have_SaveFiles;
 
     public User(String username, String password) {
         this.username = username;
         this.password = password;
+        this.have_SaveFiles = false;
     }
 
     public String getUsername() {
@@ -34,5 +36,13 @@ public class User implements Serializable {
     @Override
     public int hashCode() {
         return username.hashCode();
+    }
+
+    public boolean isHave_SaveFiles() {
+        return have_SaveFiles;
+    }
+
+    public void setHave_SaveFiles(boolean have_SaveFiles) {
+        this.have_SaveFiles = have_SaveFiles;
     }
 }

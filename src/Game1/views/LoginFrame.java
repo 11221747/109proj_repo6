@@ -23,6 +23,8 @@ public class LoginFrame extends JFrame {
     private JButton RegisterBtn;
     private MusicPlayer musicPlayer;
 
+    private User user;
+
 
     public LoginFrame(UserController userController, GameController gameController, MusicPlayer musicPlayer) {
         this.userController = userController;
@@ -147,6 +149,7 @@ public class LoginFrame extends JFrame {
                 if (UserStorage.login(usernameField.getText(), passwordField.getText())) {
                     User u = new User(usernameField.getText(), passwordField.getText());
                     gameController.setCurrentUser(u);
+                    setUser(u);
                     gameController.setLoginFrame(this);
 
                     setTimerMethod();
@@ -178,12 +181,79 @@ public class LoginFrame extends JFrame {
     }
 
 
-//        //GUI加上按钮
-//        panel.add(loginPanel);
-//        panel.add(loginButton);
-//        panel.add(registerButton);
-//        panel.add(guestButton);
-//        add(panel);
+
+    //设置选择时间模式
+    private void setTimerMethod(){
+        Object[] options = { "classic mode" , "time attack mode" , "load game"};
+        int choice = JOptionPane.showOptionDialog(this,
+                "please choose time mode",
+                "mode choosing",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        if (choice == 1) { // 选择限时模式
+            handleTimeAttackMode();
+        }
+        if (choice == 2) {
+            handleLoadGameMode();
+        }
+
+
+
+    }
+
+
+
+    private void handleTimeAttackMode() {
+        String time = (String) JOptionPane.showInputDialog(this,
+                "set time limit: (seconds) :",
+                "time attack mode set",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                new String[]{"5", "180", "240", "300"},
+                "300");
+
+        if (time != null && !time.isEmpty()) {
+            try {
+                gameController.setTimeLimit(Integer.parseInt(time));
+                gameController.setTimerEnabled(true);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "无效的时间格式", "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void handleLoadGameMode() {
+        if (  !getUser().isHave_SaveFiles()  ){
+            // 没有存档，显示提示并返回选择窗口
+            JOptionPane.showMessageDialog(this,
+                    "No saved game found!",
+                    "Load Game",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+        }else{
+            //有存档，载入开始
+            openGameFrame_WithSave();
+
+        }
+
+
+    }
+
+    public void openGameFrame_WithSave() {
+
+        GameFrame gameFrame = new GameFrame(gameController, 1);
+        gameController.setGameframe(gameFrame);
+        gameController.loadGame();
+
+        gameFrame.setVisible(true);
+        dispose();
+
+
+    }
 
     public void openGameFrame() {
         GameFrame gameFrame = new GameFrame(gameController, 1);
@@ -200,30 +270,11 @@ public class LoginFrame extends JFrame {
     }
 
 
-    //设置选择时间模式
-    private void setTimerMethod(){
-        Object[] options = {"classic mode", "time attack mode"};
-        int choice = JOptionPane.showOptionDialog(this,
-                "please choose time mode",
-                "mode choosing",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[0]);
+    public User getUser() {
+        return user;
+    }
 
-
-        if (choice == 1) { // 选择限时模式
-            String time = (String)JOptionPane.showInputDialog(this,
-                    "set time limit: (seconds)  :",
-                    "time attack mode set",
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    new String[]{"5","180", "240", "300"},
-                    "300");
-
-            gameController.setTimeLimit(Integer.parseInt(time));        //todo 这里数据没输入进去
-            gameController.setTimerEnabled(true);
-        }
+    public void setUser(User user) {
+        this.user = user;
     }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 
 
 import Game1.AI.AStarSolver;
+import Game1.AI.BeamSolver;
 import Game1.AI.MoveInfo;
 import Game1.models.Block;
 import Game1.models.Board;
@@ -195,7 +196,7 @@ public class GameController {
                 //beam最快但是绕远路
                 //双向BFS比较快，路径很短，但是无法正确走完
                 //Astar慢，但是是最快路径
-                List<MoveInfo> solution = AStarSolver.solve(board);
+                List<MoveInfo> solution = BeamSolver.solve(board);
 
 
                 System.out.println("AI solution length: " + solution.size());
@@ -219,7 +220,7 @@ public class GameController {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(50);
+                                Thread.sleep(250);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
