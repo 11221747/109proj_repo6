@@ -228,6 +228,15 @@ public class Board implements Serializable {
 
     }
 
+    public void initialize_Board_4() {
+        blocks = new ArrayList<>();
+        blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2));
+        blocks.add(new Block(Block.BlockType.GUAN_YU, 1, 2, 2, 1));
+
+
+
+    }
+
     //工具方法
     public void clearHistory(){
         history.clear();

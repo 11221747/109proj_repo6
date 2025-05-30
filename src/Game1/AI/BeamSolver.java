@@ -13,8 +13,8 @@ import java.util.*;
 public class BeamSolver {
     private static final int EXIT_R = 3, EXIT_C = 1;
     private static final int BLOCKER_PENALTY = 2;
-    private static final int BEAM_WIDTH = 2000;  // 增大 beam 宽度
-    private static final int MAX_DEPTH = 200;    // 增加最大探索深度
+    private static final int BEAM_WIDTH = 3000;  // 增大 beam 宽度
+    private static final int MAX_DEPTH = 300;    // 增加最大探索深度
 
     private static int R, C, caoIdx;
     private static List<Block> blocks;

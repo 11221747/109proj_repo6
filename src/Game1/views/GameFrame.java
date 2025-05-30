@@ -170,7 +170,9 @@ public class GameFrame extends JFrame {
                 boardPanel.repaint();
                 JOptionPane.showMessageDialog(this, "Game loaded successfully!");
             } else {
-                JOptionPane.showMessageDialog(this, "Failed to load game.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Failed to load game." +
+                        "file not exist or corrupted", "Error", JOptionPane.ERROR_MESSAGE);
+
             }
         });
 
@@ -263,6 +265,14 @@ public class GameFrame extends JFrame {
 
     public void setTimeBar(JProgressBar timeBar) {
         this.timeBar = timeBar;
+    }
+
+    public GameController getGameController() {
+        return gameController;
+    }
+
+    public void setGameController(GameController gameController) {
+        this.gameController = gameController;
     }
 
 
@@ -391,7 +401,8 @@ public class GameFrame extends JFrame {
     public void sendMessage_Win() {
         Object[] options = {"Restart", "精彩回放"};
         int choice = JOptionPane.showOptionDialog(this,
-                "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves!",
+                "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves," +
+                        " in " + (getController().getTimeLimit()- getController().getRemainingSeconds() )+ " seconds.",
                 "Victory",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.INFORMATION_MESSAGE,
@@ -421,13 +432,8 @@ public class GameFrame extends JFrame {
         this.selectedBlock = selectedBlock;
     }
 
-    public BoardPanel getBoardPanel() {
-        return boardPanel;
-    }
 
-    public void setBoardPanel(BoardPanel boardPanel) {
-        this.boardPanel = boardPanel;
-    }
+
 
     public GameController getController() {
         return controller;
