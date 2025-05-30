@@ -11,7 +11,8 @@ public class Block implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public enum BlockType { CAO_CAO, GUAN_YU, GENERAL, SOLDIER }
+
+    public enum BlockType { CAO_CAO, GUAN_YU, GENERAL, SOLDIER, OBSTACLE }
 
     private final BlockType type;
     private int x;
@@ -19,6 +20,7 @@ public class Block implements Serializable {
     private final int width;
     private final int height;
     private Color color;
+    private boolean moveable;
 
     private transient BufferedImage texture; // 新增纹理属性
     public Block(BlockType type, int x, int y, int width, int height) {
@@ -28,8 +30,17 @@ public class Block implements Serializable {
         this.width = width;
         this.height = height;
         this.texture = loadTexture(type); // 根据类型加载贴图
+
+        set_BlockMoveable();
     }
 
+    public void set_BlockMoveable() {
+        if (type == BlockType.OBSTACLE) {
+            moveable = false;
+        }else{
+            moveable = true;
+        }
+    }
 
 
     private  BufferedImage loadTexture(BlockType type) {
@@ -114,4 +125,14 @@ public class Block implements Serializable {
     public String toString() {
         return type + " (" + x + "," + y + ") " + width + "x" + height;
     }
+
+
+    public boolean isMoveable() {
+        return moveable;
+    }
+
+    public void setMoveable(boolean moveable) {
+        this.moveable = moveable;
+    }
+
 }

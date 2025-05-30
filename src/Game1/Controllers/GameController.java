@@ -66,7 +66,7 @@ public class GameController  {
     public void moveBlock(Board.Direction direction) {
         if (isReplaying) return;
         if (gameframe.getSelectedBlock() == null) return;
-
+        if(!gameframe.getSelectedBlock().isMoveable())  return;     //不能动的block就直接退
 
         //不是空的再接着
         if (!firstMove_done) {
@@ -82,6 +82,7 @@ public class GameController  {
 
         //判断胜利直接终止
         if (isWin()) {
+            getBoard().saveState();
             gameframe.sendMessage_Win();
 
         }
@@ -236,7 +237,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(250);
+                                Thread.sleep(250);                      //ai解谜的步间间隔
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
@@ -281,7 +282,7 @@ public class GameController  {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(board);
+            oos.writeObject(  getBoard()   );
             oos.close();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
@@ -302,7 +303,7 @@ public class GameController  {
         }
 
         // 创建回放计时器
-        replayTimer = new Timer(500, e -> replayNextStep()); // 每500毫秒一步
+        replayTimer = new Timer(250, e -> replayNextStep());    // 每...毫秒一步
         replayTimer.start();
     }
 

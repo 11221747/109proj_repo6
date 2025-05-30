@@ -48,7 +48,7 @@ public class Board implements Serializable {
         if(level == 1){initialize_Board_1();}
         else if(level == 2){initialize_Board_2();}
         else if(level == 3){initialize_Board_3();}
-
+        else if(level == 4){initialize_Board_4();}
     }
 
     //默认
@@ -228,6 +228,15 @@ public class Board implements Serializable {
 
     }
 
+    public void initialize_Board_4() {
+        blocks = new ArrayList<>();
+        blocks.add(new Block(Block.BlockType.CAO_CAO, 0, 0, 2, 2));
+        blocks.add(new Block(Block.BlockType.GUAN_YU, 2, 1, 2, 1));
+
+        blocks.add(  new Block(Block.BlockType.OBSTACLE, 2, 2, 2, 1)   );
+
+    }
+
     //工具方法
     public void clearHistory(){
         history.clear();
@@ -244,6 +253,7 @@ public class Board implements Serializable {
         if (level == 1) initialize_Board_1();
         else if (level == 2)initialize_Board_2();
         else if (level == 3) initialize_Board_3();
+        else if (level == 4) initialize_Board_4();
 
     }
 

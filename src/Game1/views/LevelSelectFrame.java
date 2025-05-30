@@ -27,7 +27,7 @@ public class LevelSelectFrame extends JFrame {
         JPanel panel = new JPanel(new GridLayout(0, 3, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        for (int i = 1; i <= 3; i++) {
+        for (int i = 1; i <= 4; i++) {
             level = i;
             JButton levelButton = new JButton("Level " + (i ));
             int finalI = i;
