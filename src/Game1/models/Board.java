@@ -235,6 +235,20 @@ public class Board implements Serializable {
 
         blocks.add(  new Block(Block.BlockType.OBSTACLE, 2, 2, 2, 1)   );
 
+        blocks.add(new Block(Block.BlockType.SOLDIER, 1, 4, 1, 1));
+        blocks.add(new Block(Block.BlockType.SOLDIER, 2, 3, 1, 1));
+    }
+
+    public void smaller_Caocao(){
+        Block Caocao =  blocks.getFirst();
+
+        blocks.add(new Block(Block.BlockType.CAO_CAO, Caocao.getX(), Caocao.getY(), 1, 1));
+
+        blocks.removeFirst();
+
+
+
+
     }
 
     //工具方法

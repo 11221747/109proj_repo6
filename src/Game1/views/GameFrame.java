@@ -243,6 +243,19 @@ public class GameFrame extends JFrame {
          // 添加到界面
         layeredPane.add(aiComboBox, JLayeredPane.PALETTE_LAYER);
         layeredPane.add(aiSolveBtn, JLayeredPane.PALETTE_LAYER);
+
+        //添加一个缩骨功技能按钮
+        JButton replayButton = new JButton("神秘技能");
+        replayButton.setFont(new Font("大字体", Font.PLAIN, 10));
+        replayButton.setBounds(65, 410, btnWidth, btnHeight);
+        replayButton.addActionListener(_ -> {
+
+
+            controller.getBoard().smaller_Caocao();
+            repaint();
+        });
+        layeredPane.add(replayButton, JLayeredPane.PALETTE_LAYER);
+
     }
 
     public void updateTimerDisplay(int seconds) {
@@ -373,7 +386,7 @@ public class GameFrame extends JFrame {
                 Graphics2D exitG = (Graphics2D) g.create();
                 exitG.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
                 exitG.setColor(new Color(253, 229, 45, 87));
-                exitG.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                exitG.fillRect(1 * CELL_SIZE, 3 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 exitG.dispose();
 
             }
