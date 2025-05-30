@@ -150,13 +150,13 @@ public class GameFrame extends JFrame {
         undoButton.setBounds(65, 375, btnWidth, btnHeight);
 
 
-        upButton.addActionListener(e -> controller.moveBlock(Board.Direction.UP));
-        downButton.addActionListener(e ->  controller.moveBlock(Board.Direction.DOWN));
-        leftButton.addActionListener(e ->  controller.moveBlock(Board.Direction.LEFT));
-        rightButton.addActionListener(e ->  controller.moveBlock(Board.Direction.RIGHT));
+        upButton.addActionListener(_ -> controller.moveBlock(Board.Direction.UP));
+        downButton.addActionListener(_ ->  controller.moveBlock(Board.Direction.DOWN));
+        leftButton.addActionListener(_ ->  controller.moveBlock(Board.Direction.LEFT));
+        rightButton.addActionListener(_ ->  controller.moveBlock(Board.Direction.RIGHT));
 
 
-        saveButton.addActionListener(e -> {
+        saveButton.addActionListener(_ -> {
             if (controller.saveGame()) {
                 JOptionPane.showMessageDialog(this, "Game saved successfully!");
             } else {
@@ -164,7 +164,7 @@ public class GameFrame extends JFrame {
             }
         });
 
-        loadButton.addActionListener(e -> {
+        loadButton.addActionListener(_ -> {
             if (controller.loadGame()) {
                 selectedBlock = null;
                 boardPanel.repaint();
@@ -174,14 +174,14 @@ public class GameFrame extends JFrame {
             }
         });
 
-        resetButton.addActionListener(e -> {
+        resetButton.addActionListener(_ -> {
             controller.resetGame();
             selectedBlock = null;
             boardPanel.repaint();
         });
 
         //新加的撤回按钮
-        undoButton.addActionListener(e -> {
+        undoButton.addActionListener(_ -> {
             if (controller.undo()) {
                 selectedBlock = null; // 清空选中块
                 boardPanel.repaint();
@@ -211,9 +211,7 @@ public class GameFrame extends JFrame {
 
 
         JButton aiSolveBtn = new JButton("AI solver");
-        aiSolveBtn.addActionListener(e -> {
-            controller.autoSolve();
-        });
+        aiSolveBtn.addActionListener(_ -> controller.autoSolve());
 
         layeredPane.add(aiSolveBtn, JLayeredPane.PALETTE_LAYER);
         aiSolveBtn.setBounds(65, 450, btnWidth, btnHeight);
@@ -294,15 +292,7 @@ public class GameFrame extends JFrame {
             });
 
 
-            //重新获取聚焦    测试了用不到不管了
-            /*
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    requestFocusInWindow();
-                }
-            });
-            */
+
 
             //set...
             setPreferredSize(new Dimension(BOARD_WIDTH, BOARD_HEIGHT));
@@ -381,15 +371,26 @@ public class GameFrame extends JFrame {
         }
     }
 
-    //1.0版本之后新增的方法：
-    public void sendMessage_Win(){
-        JOptionPane.showMessageDialog(this,
-                "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves!");
 
-        getController().resetGame();
+    public void sendMessage_Win() {
+        Object[] options = {"Restart", "精彩回放"};
+        int choice = JOptionPane.showOptionDialog(this,
+                "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves!",
+                "Victory",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        if (choice == 0) { // Restart
+            getController().resetGame();
+        } else if (choice == 1) { // 精彩回放
+            //getController().playReplay();
+        }
 
         setSelectedBlock(null);
-        SwingUtilities.invokeLater(this::repaint);
+        repaint();
     }
 
 

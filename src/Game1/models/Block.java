@@ -32,7 +32,7 @@ public class Block implements Serializable {
 
 
 
-    private BufferedImage loadTexture(BlockType type) {
+    private  BufferedImage loadTexture(BlockType type) {
         try {
             String path = getImagePath(type);
             InputStream is = getClass().getResourceAsStream(path);

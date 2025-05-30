@@ -96,7 +96,7 @@ public class GameController {
                 //路径--一个用户一个文件--后缀
                 new FileOutputStream(SAVE_DIR + currentUser.getUsername() + SAVE_EXT))) {
             //保存棋盘，用户名
-            oos.writeObject(   new GameState(board, currentUser.getUsername(), getRemainingSeconds(), getLevel() , isTimerEnabled)   );
+            oos.writeObject(   new GameState(board, currentUser.getUsername(), getRemainingSeconds(), getLevel() , isTimerEnabled, getBoard().getHistory()  ));
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -122,6 +122,8 @@ public class GameController {
             //读取后设置的参数：
             getCountdownTimer().stop();
             this.board = state.getBoard();
+            getBoard().setHistory(   state.getHistory()   );
+
             setLevel(state.getLevel());
             setFirstMove_done(false);
 
@@ -219,7 +221,7 @@ public class GameController {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(50);
+                                Thread.sleep(250);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }

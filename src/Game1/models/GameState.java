@@ -4,7 +4,7 @@ package Game1.models;
 
 import java.io.Serial;
 import java.io.Serializable;
-
+import java.util.Stack;
 
 
 public class GameState implements Serializable {
@@ -16,13 +16,15 @@ public class GameState implements Serializable {
     private int level;
     private int remainingSeconds;
     private boolean timer_flag;
+    private Stack<Board> history;
 
-    public GameState(Board board, String username, int remainingSeconds, int level , boolean timer_flag) {
+    public GameState(Board board, String username, int remainingSeconds, int level , boolean timer_flag, Stack<Board> history) {
         this.board = board;
         this.username = username;
         this.remainingSeconds = remainingSeconds;
         this.level = level;
         this.timer_flag = timer_flag;
+        this.history = history;
     }
 
 
@@ -52,5 +54,9 @@ public class GameState implements Serializable {
 
     public void setTimer_flag(boolean timer_flag) {
         this.timer_flag = timer_flag;
+    }
+
+    public Stack<Board> getHistory() {
+        return history;
     }
 }
