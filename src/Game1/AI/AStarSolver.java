@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * ¶àÏß³Ì A* ËÑË÷Çó½âÆ÷£¬´øËÑË÷½ø¶ÈÊä³ö
+ * å¤šçº¿ç¨‹ A* æœç´¢æ±‚è§£å™¨ï¼Œå¸¦æœç´¢è¿›åº¦è¾“å‡º
  */
 public class AStarSolver {
     private static final int EXIT_R = 3, EXIT_C = 1;
@@ -33,7 +33,7 @@ public class AStarSolver {
             }
         }
         if (caoIdx == -1) {
-            System.out.println("Î´ÕÒµ½²Ü²Ù·½¿é£¡");
+            System.out.println("æœªæ‰¾åˆ°æ›¹æ“æ–¹å—ï¼");
             return Collections.emptyList();
         }
 
@@ -62,7 +62,7 @@ public class AStarSolver {
                 int count = processed.incrementAndGet();
                 if (cur.g > maxDepth.get()) maxDepth.set(cur.g);
                 if (count % 100000 == 0) {
-                    System.out.printf("Ïß³Ì[%s] ÒÑ´¦Àí×´Ì¬Êı: %d, µ±Ç°×î´óÉî¶È: %d, open¶ÓÁĞ´óĞ¡: %d, visited×´Ì¬Êı: %d%n",
+                    System.out.printf("çº¿ç¨‹[%s] å·²å¤„ç†çŠ¶æ€æ•°: %d, å½“å‰æœ€å¤§æ·±åº¦: %d, opené˜Ÿåˆ—å¤§å°: %d, visitedçŠ¶æ€æ•°: %d%n",
                             Thread.currentThread().getName(), count, maxDepth.get(), open.size(), visited.size());
                 }
 

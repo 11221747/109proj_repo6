@@ -3,11 +3,13 @@ package Game1.Controllers;
 
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Stack;
 
 
-import Game1.AI.AStarSolver;
-import Game1.AI.MoveInfo;
+import Game1.AI.*;
 import Game1.models.Block;
 import Game1.models.Board;
 import Game1.models.GameState;
@@ -17,7 +19,7 @@ import Game1.views.LoginFrame;
 import javax.swing.*;
 
 
-public class GameController {
+public class GameController  {
     private static final String SAVE_DIR = "saves/";
     private static final String SAVE_EXT = ".klotski";
 
@@ -27,7 +29,7 @@ public class GameController {
     //计时相关：
     private javax.swing.Timer countdownTimer;
     private int timeLimit;
-    private int remainingSeconds;
+    private int remainingSeconds ;
     private boolean isTimerEnabled = false; // 是否启用倒计时
     private boolean firstMove_done = false;
 
@@ -36,6 +38,11 @@ public class GameController {
     private GameFrame gameframe;
     private int level;
     private LoginFrame loginFrame;
+
+    private Timer replayTimer;
+    private Stack<Board> replayHistory;
+    private boolean isReplaying = false;
+
 
     public void setLoginFrame(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
@@ -57,7 +64,9 @@ public class GameController {
 
 
     public void moveBlock(Board.Direction direction) {
+        if (isReplaying) return;
         if (gameframe.getSelectedBlock() == null) return;
+
 
         //不是空的再接着
         if (!firstMove_done) {
@@ -188,19 +197,21 @@ public class GameController {
 
     //AI相关
     // AI 自动求解
-    public void autoSolve() {
+    public void autoSolve(String algorithm) {
         new SwingWorker<List<MoveInfo>, Void>() {
             @Override
             protected List<MoveInfo> doInBackground() {
+                List<MoveInfo> solution = switch (algorithm) {
+                    case "AStar" -> AStarSolver.solve(board);
+                    case "Beam" -> BeamSolver.solve(board);
+                    case "BiDirectional" -> BiDirectionalSolver.solve(board);
 
-                //这里要选算法了
-                //beam最快但是绕远路
-                //双向BFS比较快，路径很短，但是无法正确走完
-                //Astar慢，但是是最快路径
-                List<MoveInfo> solution = AStarSolver.solve(board);
+                    default -> AStarSolver.solve(board); // 默认使用A*
+                };
 
+                // 根据选择的算法调用对应的求解器
 
-                System.out.println("AI solution length: " + solution.size());
+                System.out.println(algorithm + " solution length: " + solution.size());
                 return solution;
             }
 
@@ -210,6 +221,10 @@ public class GameController {
                     List<MoveInfo> solution = get();
                     if (solution == null || solution.isEmpty()) {
                         System.out.println("No solution found or empty list.");
+                        JOptionPane.showMessageDialog(gameframe,
+                                "AI求解失败，请尝试其他算法！",
+                                "提示",
+                                JOptionPane.WARNING_MESSAGE);
                         return;
                     }
                     // 执行动画
@@ -229,11 +244,88 @@ public class GameController {
                     }).start();
                 } catch (Exception e) {
                     e.printStackTrace();
+                    JOptionPane.showMessageDialog(gameframe,
+                            "AI求解时发生错误: " + e.getMessage(),
+                            "错误",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();
     }
 
+    //精彩回放
+    public void playReplay() {
+        // 获取当前棋盘的历史状态
+        Stack<Board> history = board.getHistory();
+
+        if (history == null || history.isEmpty()) {
+            JOptionPane.showMessageDialog(gameframe,
+                    "没有可回放的游戏记录",
+                    "回放",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 停止当前计时器
+        if (countdownTimer != null && countdownTimer.isRunning()) {
+            countdownTimer.stop();
+        }
+
+        // 创建回放历史副本（反转顺序：从最早到最新）
+        replayHistory = new Stack<>();
+        List<Board> historyList = new ArrayList<>(history);
+        Collections.reverse(historyList); // 反转顺序
+        replayHistory.addAll(historyList);
+
+        // 添加当前状态作为最后一个状态
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(board);
+            oos.close();
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            Board currentCopy = (Board) ois.readObject();
+            replayHistory.push(currentCopy);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        // 设置回放状态
+        isReplaying = true;
+
+        // 重置到初始状态
+        if (!replayHistory.isEmpty()) {
+            board = replayHistory.firstElement();
+            gameframe.repaint();
+        }
+
+        // 创建回放计时器
+        replayTimer = new Timer(500, e -> replayNextStep()); // 每500毫秒一步
+        replayTimer.start();
+    }
+
+    // 回放下一步
+    private void replayNextStep() {
+        if (replayHistory == null || replayHistory.isEmpty()) {
+            // 回放结束
+            replayTimer.stop();
+            isReplaying = false;
+            JOptionPane.showMessageDialog(gameframe,
+                    "回放结束",
+                    "回放",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // 获取下一个状态
+        Board nextState = replayHistory.pop();
+        this.board = nextState;
+        gameframe.repaint();
+
+
+    }
 
     //选关相关
     public void initialize_Board() {
@@ -259,10 +351,16 @@ public class GameController {
     }
 
     public void resetGame() {
+        // 停止回放
+        if (replayTimer != null && replayTimer.isRunning()) {
+            replayTimer.stop();
+        }
+        isReplaying = false;
+
+        // 原有逻辑保持不变...
         board.reset(level);
         getBoard().setMoves(0);
         getBoard().clearHistory();
-
     }
 
 
@@ -314,6 +412,13 @@ public class GameController {
         this.level = level;
     }
 
+    public boolean isReplaying() {
+        return isReplaying;
+    }
+
+    public void setReplaying(boolean replaying) {
+        isReplaying = replaying;
+    }
 }
 
 

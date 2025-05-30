@@ -38,9 +38,8 @@ public class UserStorage {
 
 
 
-
 //    // 测试
-//    public static void main(String[] args) {
+//    public static void  main(String[] args) {
 //        try {
 //            // 注册用户
 //            registerUser("alice", "123");
