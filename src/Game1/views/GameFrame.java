@@ -26,9 +26,36 @@ public class GameFrame extends JFrame {
     private GameController gameController;
     private MusicPlayer musicPlayer;
 
-
+    private Timer animationTimer;
+    private Block animatingBlock;
+    private Point animationStart;
+    private Point animationTarget;
+    private float animationProgress;
     private Block selectedBlock;
 
+
+    public void startAnimation(Block block, Point target) {
+        animatingBlock = block;
+        animationStart = new Point(block.getX(), block.getY());
+        animationTarget = target;
+        animationProgress = 0f;
+
+        if (animationTimer == null) {
+            animationTimer = new Timer(16, e -> {  // 约60fps
+                animationProgress += 0.0625f;
+                if (animationProgress >= 1f) {
+                    animationProgress = 1f;
+                    animationTimer.stop();
+                    animatingBlock = null;
+                }
+                boardPanel.repaint();
+            });
+        }
+
+        if (!animationTimer.isRunning()) {
+            animationTimer.start();
+        }
+    }
     //构造方法
     public GameFrame(GameController controller) {
         this.controller = controller;
@@ -90,7 +117,7 @@ public class GameFrame extends JFrame {
             layeredPane.add(background, JLayeredPane.DEFAULT_LAYER);
 
         } catch (Exception e) {
-//            System.err.println("加载背景图片失败: " + e.getMessage());
+
             layeredPane.setBackground(Color.CYAN);
         }
     }
@@ -207,18 +234,19 @@ public class GameFrame extends JFrame {
         layeredPane.add(timeBar, JLayeredPane.PALETTE_LAYER);
 
 
-        // 创建AI选择下拉框
-        String[] aiAlgorithms = {"A* Search(优先40s)", "Beam Search (2s多步)", "Bidirectional BFS (快，步少，不一定成功)", "BFS (基础)"};
-        JComboBox<String> aiComboBox = new JComboBox<>(aiAlgorithms);
-        aiComboBox.setBounds(65, 450, 150, 25); // 调整宽度以显示完整名称
+        // AI选择下拉框
+        String[] aiAlgorithms = {"AStar Search(优先40s)", "Beam Search (2s多步)", "Bidirectional BFS (快)"};
+        JComboBox<String> aiBox = new JComboBox<>(aiAlgorithms);
+        aiBox.setBounds(65, 450, 150, 25);
 
-        // AI执行按钮
+        // AI执行
         JButton aiSolveBtn = new JButton("AI求解");
+
         aiSolveBtn.setBounds(65, 480, 150, 30);
 
         // 添加监听器
         aiSolveBtn.addActionListener(e -> {
-            String selectedAlgorithm = (String) aiComboBox.getSelectedItem();
+            String selectedAlgorithm = (String) aiBox.getSelectedItem();
             String algorithmKey = "";
 
             // 映射UI显示名称到算法标识
@@ -226,17 +254,14 @@ public class GameFrame extends JFrame {
                 algorithmKey = "AStar";
             } else if (selectedAlgorithm.startsWith("Beam")) {
                 algorithmKey = "Beam";
-            } else if (selectedAlgorithm.startsWith("Bidirectional")) {
+            } else if (selectedAlgorithm.contains("Bidirectional")) {
                 algorithmKey = "BiDirectional";
-            } else {
-                algorithmKey = "BFS";
             }
-
             controller.autoSolve(algorithmKey);
         });
 
          // 添加到界面
-        layeredPane.add(aiComboBox, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(aiBox, JLayeredPane.PALETTE_LAYER);
         layeredPane.add(aiSolveBtn, JLayeredPane.PALETTE_LAYER);
     }
 
@@ -251,7 +276,7 @@ public class GameFrame extends JFrame {
         JOptionPane.showMessageDialog(this, "time is up! game is over");
         setVisible(false);
         this.dispose();
-        System.exit(0);
+        System.exit(0);//时间到退出程序
         // 返回登录界面
         //之后怎么做？？todo
         //超时了之后游戏其实因该继续
@@ -261,7 +286,6 @@ public class GameFrame extends JFrame {
     public void setTimeBar(JProgressBar timeBar) {
         this.timeBar = timeBar;
     }
-
 
     private class BoardPanel extends JPanel {
         public BoardPanel() {
@@ -335,7 +359,7 @@ public class GameFrame extends JFrame {
             super.paintComponent(g);
 
             // 绘制背景网格
-            g.setColor(new Color(200, 200, 200, 150)); // 半透明灰色
+            g.setColor(new Color(200, 200, 200, 150));
             for (int i = 0; i <= Board.ROWS; i++) {
                 g.drawLine(0, i * CELL_SIZE, BOARD_WIDTH, i * CELL_SIZE);
             }
@@ -343,57 +367,54 @@ public class GameFrame extends JFrame {
                 g.drawLine(j * CELL_SIZE, 0, j * CELL_SIZE, BOARD_HEIGHT);
             }
 
-
-            // Draw blocks
+            // 绘制方块（包括动画中的方块）
             for (Block block : controller.getBoard().getBlocks()) {
-                int x = block.getX() * CELL_SIZE;
-                int y = block.getY() * CELL_SIZE;
-                int width = block.getWidth() * CELL_SIZE;
-                int height = block.getHeight() * CELL_SIZE;
-                // 绘制贴图
-                BufferedImage texture = block.getTexture();
-
-                    g.drawImage(texture, x, y, width, height, this);
-
-                // 绘制选中框
-                if (block == selectedBlock) {
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setColor(Color.BLUE);
-                    g2d.setStroke(new BasicStroke(3));
-                    g2d.drawRect(x, y, width, height);
-                    g2d.dispose();
+                // 如果是正在动画的方块，计算中间位置
+                if (block == animatingBlock && animationProgress < 1f) {
+                    float x = animationStart.x + (animationTarget.x - animationStart.x) * animationProgress;
+                    float y = animationStart.y + (animationTarget.y - animationStart.y) * animationProgress;
+                    drawBlock(g, block, x, y);
+                } else {
+                    drawBlock(g, block, block.getX(), block.getY());
                 }
-
-                // 绘制出口
-                Graphics2D exitG = (Graphics2D) g.create();
-                exitG.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-                exitG.setColor(new Color(253, 229, 45, 87));
-                exitG.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                exitG.dispose();
-
             }
 
-            // Highlight selected block
-            if (selectedBlock != null) {
-                int x = selectedBlock.getX() * CELL_SIZE;
-                int y = selectedBlock.getY() * CELL_SIZE;
-                int width = selectedBlock.getWidth() * CELL_SIZE;
-                int height = selectedBlock.getHeight() * CELL_SIZE;
+            // 绘制出口
+            Graphics2D exitG = (Graphics2D) g.create();
+            exitG.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            exitG.setColor(new Color(253, 229, 45, 87));
+            exitG.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            exitG.dispose();
 
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setColor(Color.orange);
-                g2.setStroke(new BasicStroke(3));
-                g2.drawRect(x, y, width, height);
-            }
-
-            // Draw move count
+            // 绘制移动次数
             g.setColor(Color.BLACK);
             g.drawString("Moves: " + controller.getBoard().getMoves(), 10, 20);
         }
+
+        private void drawBlock(Graphics g, Block block, float x, float y) {
+            int pixelX = (int) (x * CELL_SIZE);
+            int pixelY = (int) (y * CELL_SIZE);
+            int width = block.getWidth() * CELL_SIZE;
+            int height = block.getHeight() * CELL_SIZE;
+
+            // 绘制贴图
+            BufferedImage texture = block.getTexture();
+            g.drawImage(texture, pixelX, pixelY, width, height, this);
+
+            // 绘制选中框
+            if (block == selectedBlock) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setColor(Color.ORANGE);
+                g2d.setStroke(new BasicStroke(3));
+                g2d.drawRect(pixelX, pixelY, width, height);
+                g2d.dispose();
+            }
+        }
+
     }
 
     //1.0版本之后新增的方法：
-    public void sendMessage_Win(){
+    public void sendMessage_Win() {
         JOptionPane.showMessageDialog(this,
                 "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves!");
 
@@ -401,7 +422,6 @@ public class GameFrame extends JFrame {
         setSelectedBlock(null);
         SwingUtilities.invokeLater(this::repaint);
     }
-
 
 
     //javabean

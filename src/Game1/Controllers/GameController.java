@@ -2,6 +2,7 @@ package Game1.Controllers;
 
 
 
+import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +43,40 @@ public class GameController  {
     }
 
 
+    public void moveBlock(Board.Direction direction) {
+        if (gameframe.getSelectedBlock() == null) return;
+
+        if (!firstMove_done) {
+            countdown_Start();
+            setFirstMove_done(true);
+        }
+
+        Block block = gameframe.getSelectedBlock();
+        if (!getBoard().canMove(block, direction)) return;
+
+        // 计算目标位置
+        Point target = new Point(block.getX(), block.getY());
+        switch (direction) {
+            case UP: target.y--; break;
+            case DOWN: target.y++; break;
+            case LEFT: target.x--; break;
+            case RIGHT: target.x++; break;
+        }
+
+        // 播放音效
+        musicPlayer.play("src/Game1/data/bubble.wav", false);
+
+        // 启动动画
+        gameframe.startAnimation(block, target);
+
+        // 实际移动方块（动画完成后会调用）
+        getBoard().moveBlock(block, direction);
+
+        if (isWin()) {
+            gameframe.sendMessage_Win();
+        }
+    }
+
 
     //构造方法和设置用户
     public GameController() {
@@ -51,27 +86,23 @@ public class GameController  {
 
 
 
-    public void moveBlock(Board.Direction direction) {
-        if (gameframe.getSelectedBlock() == null) return;
-
-        //不是空的再接着
-        if (!firstMove_done) {
-            countdown_Start();
-            setFirstMove_done(true);
-        }
-
-
-        //可以move了之后
-        musicPlayer.play("src/Game1/data/bubble.wav",false);
-        getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
-        gameframe.repaint();
-
-        //判断胜利直接终止
-        if (isWin()) {
-            gameframe.sendMessage_Win();
-        }
-
-    }
+//    public void moveBlock(Board.Direction direction) {
+//        if (gameframe.getSelectedBlock() == null) return;
+//        //不是空的再接着
+//        if (!firstMove_done) {
+//            countdown_Start();
+//            setFirstMove_done(true);
+//        }
+//
+//        //可以move了之后
+//        musicPlayer.play("src/Game1/data/bubble.wav",false);
+//        getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
+//        //判断胜利直接终止
+//        if (isWin()) {
+//            gameframe.sendMessage_Win();
+//        }
+//
+//    }
 
 
 
@@ -207,9 +238,6 @@ public class GameController  {
                     case "BiDirectional":
                         solution = BiDirectionalSolver.solve(board);
                         break;
-                    case "BFS":
-                        solution = BFSolver.solve(board);
-                        break;
                     default:
                         solution = AStarSolver.solve(board); // 默认使用A*
                 }
@@ -240,19 +268,14 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(250); // 控制动画速度
+                                Thread.sleep(500);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }
                         }
                     }).start();
-
                 } catch (Exception e) {
                     e.printStackTrace();
-                    JOptionPane.showMessageDialog(gameframe,
-                            "AI求解时发生错误: " + e.getMessage(),
-                            "错误",
-                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();

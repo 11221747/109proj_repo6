@@ -29,7 +29,7 @@ public class LoginFrame extends JFrame {
         this.gameController = gameController;
         this.musicPlayer=  musicPlayer;
         initUI();
-        musicPlayer.play("src/Game1/data/Mario.wav",true); // 循环播放
+        musicPlayer.play("src/Game1/data/groove.wav",true); // 循环播放
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -167,7 +167,6 @@ public class LoginFrame extends JFrame {
         GuestBtn.addActionListener(e -> {
             usernameField.setText("");
             passwordField.setText("");
-
             setTimerMethod();
             openGameFrame();//开始游戏
             this.setLocationRelativeTo(null);
