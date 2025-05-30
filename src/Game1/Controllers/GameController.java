@@ -2,6 +2,7 @@ package Game1.Controllers;
 
 
 
+import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,13 +75,27 @@ public class GameController  {
             setFirstMove_done(true);
         }
 
+        Block block = gameframe.getSelectedBlock();
+        if (!getBoard().canMove(block, direction)) return;
 
-        //可以move了之后
+        // 计算目标位置
+        Point target = new Point(block.getX(), block.getY());
+        switch (direction) {
+            case UP: target.y--; break;
+            case DOWN: target.y++; break;
+            case LEFT: target.x--; break;
+            case RIGHT: target.x++; break;
+        }
+
+        // 播放音效
         musicPlayer.play("src/Game1/data/bubble.wav", false);
-        getBoard().moveBlock(gameframe.getSelectedBlock(), direction);
-        gameframe.repaint();
 
-        //判断胜利直接终止
+        // 启动动画
+        gameframe.startAnimation(block, target);
+
+        // 实际移动方块（动画完成后会调用）
+        getBoard().moveBlock(block, direction);
+
         if (isWin()) {
             getBoard().saveState();
             gameframe.sendMessage_Win();
@@ -237,7 +252,7 @@ public class GameController  {
                                 moveBlock(move.direction);
                             });
                             try {
-                                Thread.sleep(250);                      //ai解谜的步间间隔
+                                Thread.sleep(500);
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                             }

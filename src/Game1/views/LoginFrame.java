@@ -222,7 +222,7 @@ public class LoginFrame extends JFrame {
                     new String[]{"5","180", "240", "300"},
                     "300");
 
-            gameController.setTimeLimit(Integer.parseInt(time));        //todo 这里数据没输入进去
+            gameController.setTimeLimit(Integer.parseInt(time));
             gameController.setTimerEnabled(true);
         }
     }

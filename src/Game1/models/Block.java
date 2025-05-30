@@ -43,38 +43,23 @@ public class Block implements Serializable {
     }
 
 
-    private  BufferedImage loadTexture(BlockType type) {
+    private BufferedImage loadTexture(BlockType type) {
+
+        String path = getImagePath(type);
+        InputStream istr = getClass().getResourceAsStream(path);
+        BufferedImage original = null;
         try {
-            String path = getImagePath(type);
-            InputStream is = getClass().getResourceAsStream(path);
-            if (is == null) return createFallbackTexture();
-
-            BufferedImage original = ImageIO.read(is);
-            int targetWidth = this.width * 80;  // CELL_SIZE=80
-            int targetHeight = this.height * 80;
-
-            return resizeImage(original, targetWidth, targetHeight);
-        } catch (IOException ex) {
-            return createFallbackTexture();
+            original = ImageIO.read(istr);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+        int targetWidth = this.width * 80;  // CELL_SIZE=80，像素大小是80
+        int targetHeight = this.height * 80;
+
+        return resizeImage(original, targetWidth, targetHeight);
+
     }
 
-    // 新增备用纹理生成
-    private BufferedImage createFallbackTexture() {
-        BufferedImage img = new BufferedImage(80, 80, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = img.createGraphics();
-
-        // 棋盘格背景
-        for (int i = 0; i < 80; i += 10) {
-            for (int j = 0; j < 80; j += 10) {
-                g2d.setColor(((i + j) / 10 % 2 == 0) ? Color.PINK : Color.WHITE);
-                g2d.fillRect(i, j, 10, 10);
-            }
-        }
-
-        g2d.dispose();
-        return img;
-    }
     private BufferedImage resizeImage(BufferedImage original, int width, int height) {
         BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = resized.createGraphics();
