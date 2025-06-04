@@ -25,6 +25,7 @@ public class GameFrame extends JFrame {
     private UserController userController;
     private GameController gameController;
     private MusicPlayer musicPlayer;
+    private int level;
 
     private Timer animationTimer;
     private Block animatingBlock;
@@ -33,37 +34,21 @@ public class GameFrame extends JFrame {
     private float animationProgress;
     private Block selectedBlock;
 
+private LoginFrame loginFrame;
 
-    public void startAnimation(Block block, Point target) {
-        animatingBlock = block;
-        animationStart = new Point(block.getX(), block.getY());
-        animationTarget = target;
-        animationProgress = 0f;
 
-        if (animationTimer == null) {
-            animationTimer = new Timer(16, e -> {  // 约60fps
-                animationProgress += 0.0625f;
-                if (animationProgress >= 1f) {
-                    animationProgress = 1f;
-                    animationTimer.stop();
-                    animatingBlock = null;
-                }
-                boardPanel.repaint();
-            });
-        }
 
-        if (!animationTimer.isRunning()) {
-            animationTimer.start();
-        }
-    }
     //构造方法
-    public GameFrame(GameController controller) {
+    public GameFrame(GameController controller, int level) {
         this.controller = controller;
-        this.userController= userController;
+        this.level = level;
+
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Klotski Puzzle");
+        //todo:加个显示level的组件   在loadgames之后刷新关卡数
+
         setResizable(false);
-        setSize(591, 550);////有点矮，如果把按钮移到左边就不矮了
+        setSize(591, 550);//有点矮，如果把按钮移到左边就不矮了
         JLayeredPane layeredPane = new JLayeredPane();
         layeredPane.setLayout(new BorderLayout()); // 添加布局管理器
 
@@ -152,7 +137,7 @@ public class GameFrame extends JFrame {
         resetButton.setFont(new Font("大字体", Font.PLAIN, 10));
 
         JButton saveButton = new JButton("Save");
-       saveButton.setFont(new Font("大字体", Font.PLAIN, 10));
+        saveButton.setFont(new Font("大字体", Font.PLAIN, 10));
 
         JButton loadButton = new JButton("Load");
         loadButton.setFont(new Font("大字体", Font.PLAIN, 10));
@@ -174,13 +159,13 @@ public class GameFrame extends JFrame {
         undoButton.setBounds(65, 375, btnWidth, btnHeight);
 
 
-        upButton.addActionListener(e -> controller.moveBlock(Board.Direction.UP));
-        downButton.addActionListener(e ->  controller.moveBlock(Board.Direction.DOWN));
-        leftButton.addActionListener(e ->  controller.moveBlock(Board.Direction.LEFT));
-        rightButton.addActionListener(e ->  controller.moveBlock(Board.Direction.RIGHT));
+        upButton.addActionListener(_ -> controller.moveBlock(Board.Direction.UP));
+        downButton.addActionListener(_ ->  controller.moveBlock(Board.Direction.DOWN));
+        leftButton.addActionListener(_ ->  controller.moveBlock(Board.Direction.LEFT));
+        rightButton.addActionListener(_ ->  controller.moveBlock(Board.Direction.RIGHT));
 
 
-        saveButton.addActionListener(e -> {
+        saveButton.addActionListener(_ -> {
             if (controller.saveGame()) {
                 JOptionPane.showMessageDialog(this, "Game saved successfully!");
             } else {
@@ -188,24 +173,26 @@ public class GameFrame extends JFrame {
             }
         });
 
-        loadButton.addActionListener(e -> {
+        loadButton.addActionListener(_ -> {
             if (controller.loadGame()) {
                 selectedBlock = null;
                 boardPanel.repaint();
                 JOptionPane.showMessageDialog(this, "Game loaded successfully!");
             } else {
-                JOptionPane.showMessageDialog(this, "Failed to load game.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Failed to load game." +
+                        "file not exist or corrupted", "Error", JOptionPane.ERROR_MESSAGE);
+
             }
         });
 
-        resetButton.addActionListener(e -> {
+        resetButton.addActionListener(_ -> {
             controller.resetGame();
             selectedBlock = null;
             boardPanel.repaint();
         });
 
         //新加的撤回按钮
-        undoButton.addActionListener(e -> {
+        undoButton.addActionListener(_ -> {
             if (controller.undo()) {
                 selectedBlock = null; // 清空选中块
                 boardPanel.repaint();
@@ -239,9 +226,8 @@ public class GameFrame extends JFrame {
         JComboBox<String> aiBox = new JComboBox<>(aiAlgorithms);
         aiBox.setBounds(65, 450, 150, 25);
 
-        // AI执行
+        // AI执行按钮
         JButton aiSolveBtn = new JButton("AI求解");
-
         aiSolveBtn.setBounds(65, 480, 150, 30);
 
         // 添加监听器
@@ -260,9 +246,33 @@ public class GameFrame extends JFrame {
             controller.autoSolve(algorithmKey);
         });
 
-         // 添加到界面
+        // 添加到界面
         layeredPane.add(aiBox, JLayeredPane.PALETTE_LAYER);
         layeredPane.add(aiSolveBtn, JLayeredPane.PALETTE_LAYER);
+
+        //添加一个缩骨功技能按钮
+        JButton replayButton = new JButton("神秘技能");
+        replayButton.setFont(new Font("大字体", Font.PLAIN, 10));
+        replayButton.setBounds(65, 410, btnWidth, btnHeight);
+        replayButton.addActionListener(_ -> {
+
+
+            controller.getBoard().smaller_Caocao();
+            repaint();
+        });
+        layeredPane.add(replayButton, JLayeredPane.PALETTE_LAYER);
+
+
+         // 返回loginframe 按钮
+        JButton backButton = new JButton("返回登录");
+        backButton.setFont(new Font("大字体", Font.PLAIN, 10));
+        backButton.setBounds(65, 220, btnWidth, btnHeight);
+        backButton.addActionListener(_ -> {
+            controller.getLoginFrame().setVisible(true);
+            this.dispose();
+        });
+        layeredPane.add(backButton, JLayeredPane.PALETTE_LAYER);
+
     }
 
     public void updateTimerDisplay(int seconds) {
@@ -276,7 +286,7 @@ public class GameFrame extends JFrame {
         JOptionPane.showMessageDialog(this, "time is up! game is over");
         setVisible(false);
         this.dispose();
-        System.exit(0);//时间到退出程序
+        System.exit(0);
         // 返回登录界面
         //之后怎么做？？todo
         //超时了之后游戏其实因该继续
@@ -285,6 +295,14 @@ public class GameFrame extends JFrame {
 
     public void setTimeBar(JProgressBar timeBar) {
         this.timeBar = timeBar;
+    }
+
+    public GameController getGameController() {
+        return gameController;
+    }
+
+    public void setGameController(GameController gameController) {
+        this.gameController = gameController;
     }
 
     private class BoardPanel extends JPanel {
@@ -329,15 +347,7 @@ public class GameFrame extends JFrame {
             });
 
 
-            //重新获取聚焦    测试了用不到不管了
-            /*
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    requestFocusInWindow();
-                }
-            });
-            */
+
 
             //set...
             setPreferredSize(new Dimension(BOARD_WIDTH, BOARD_HEIGHT));
@@ -383,7 +393,7 @@ public class GameFrame extends JFrame {
             Graphics2D exitG = (Graphics2D) g.create();
             exitG.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
             exitG.setColor(new Color(253, 229, 45, 87));
-            exitG.fillRect(2 * CELL_SIZE, 4 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            exitG.fillRect(1 * CELL_SIZE, 3 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
             exitG.dispose();
 
             // 绘制移动次数
@@ -415,12 +425,48 @@ public class GameFrame extends JFrame {
 
     //1.0版本之后新增的方法：
     public void sendMessage_Win() {
-        JOptionPane.showMessageDialog(this,
-                "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves!");
+        Object[] options = {"Restart", "精彩回放"};
+        int choice = JOptionPane.showOptionDialog(this,
+                "Congratulations! You won in " + this.getController().getBoard().getMoves() + " moves," +
+                        " in " + (getController().getTimeLimit()- getController().getRemainingSeconds() )+ " seconds.",
+                "Victory",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]);
 
-        getController().resetGame();
+        if (choice == 0) {            // Restart
+            getController().resetGame();
+        } else if (choice == 1) {     // 精彩回放
+            getController().playReplay();
+        }
+
         setSelectedBlock(null);
-        SwingUtilities.invokeLater(this::repaint);
+        repaint();
+    }
+
+    public void startAnimation(Block block, Point target) {
+        animatingBlock = block;
+        animationStart = new Point(block.getX(), block.getY());
+        animationTarget = target;
+        animationProgress = 0f;
+
+        if (animationTimer == null) {
+            animationTimer = new Timer(16, e -> {  // 约60fps
+                animationProgress += 0.0625f;
+                if (animationProgress >= 1f) {
+                    animationProgress = 1f;
+                    animationTimer.stop();
+                    animatingBlock = null;
+                }
+                boardPanel.repaint();
+            });
+        }
+
+        if (!animationTimer.isRunning()) {
+            animationTimer.start();
+        }
     }
 
 
