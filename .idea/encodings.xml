@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/saves/11.klotski" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/AI/AStarSolver.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/Controllers/MusicPlayer.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/Controllers/User.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/KlotskiApp.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/models/GameState.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/views/FrameUtil.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/Game1/views/LevelSelectFrame.java" charset="UTF-8" />
+  </component>
+</project>
