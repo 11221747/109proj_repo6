@@ -76,6 +76,7 @@ public class Block implements Serializable {
             case GUAN_YU: return "/Game1/pic/Guanyu.png";
             case GENERAL: return "/Game1/pic/General.png";
             case SOLDIER: return "/Game1/pic/Soldier.png";
+            case OBSTACLE: return "/Game1/pic/stoneObstacle.png";
             default: return "";
         }
     }
