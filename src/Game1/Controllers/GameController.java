@@ -48,12 +48,15 @@ public class GameController  {
     public void setLoginFrame(LoginFrame loginFrame) {
         this.loginFrame = loginFrame;
     }
-
+    public LoginFrame getLoginFrame() {
+        return loginFrame;
+    }
 
     public void setGameframe(GameFrame gameframe) {
         this.gameframe = gameframe;
         initTimer(timeLimit);
     }
+
 
 
     //构造方法和设置用户
@@ -155,6 +158,8 @@ public class GameController  {
             setRemainingSeconds(state.getRemainingSeconds());
             setTimerEnabled(state.isTimer_flag());
             initTimer(remainingSeconds);
+
+            getGameframe().refreshLevelDisplay(getLevel());
 
 
             return true;
@@ -434,6 +439,10 @@ public class GameController  {
 
     public void setReplaying(boolean replaying) {
         isReplaying = replaying;
+    }
+
+    public GameFrame getGameframe() {
+        return gameframe;
     }
 }
 

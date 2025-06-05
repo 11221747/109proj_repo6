@@ -34,7 +34,7 @@ public class GameFrame extends JFrame {
     private float animationProgress;
     private Block selectedBlock;
 
-
+    private JLabel levelLabel;
 
 
 
@@ -137,7 +137,7 @@ public class GameFrame extends JFrame {
         resetButton.setFont(new Font("大字体", Font.PLAIN, 10));
 
         JButton saveButton = new JButton("Save");
-       saveButton.setFont(new Font("大字体", Font.PLAIN, 10));
+        saveButton.setFont(new Font("大字体", Font.PLAIN, 10));
 
         JButton loadButton = new JButton("Load");
         loadButton.setFont(new Font("大字体", Font.PLAIN, 10));
@@ -262,6 +262,25 @@ public class GameFrame extends JFrame {
         });
         layeredPane.add(replayButton, JLayeredPane.PALETTE_LAYER);
 
+
+         // 返回loginframe 按钮
+        JButton backButton = new JButton("返回登录");
+        backButton.setFont(new Font("大字体", Font.PLAIN, 10));
+        backButton.setBounds(65, 220, btnWidth, btnHeight);
+        backButton.addActionListener(_ -> {
+            controller.getLoginFrame().setVisible(true);
+            this.dispose();
+        });
+        layeredPane.add(backButton, JLayeredPane.PALETTE_LAYER);
+
+        //关卡显示
+        levelLabel = new JLabel("当前关卡: " + getLevel());
+        levelLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        levelLabel.setForeground(Color.WHITE);
+        levelLabel.setBounds(20, 10, 200, 30); // 左上角位置
+        levelLabel.setOpaque(false); // 透明背景
+        layeredPane.add(levelLabel, JLayeredPane.PALETTE_LAYER);
+
     }
 
     public void updateTimerDisplay(int seconds) {
@@ -292,6 +311,18 @@ public class GameFrame extends JFrame {
 
     public void setGameController(GameController gameController) {
         this.gameController = gameController;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public void setLevelLabel(JLabel levelLabel) {
+        this.levelLabel = levelLabel;
     }
 
     private class BoardPanel extends JPanel {
@@ -458,6 +489,16 @@ public class GameFrame extends JFrame {
         }
     }
 
+    public void refreshLevelDisplay(int newLevel) {
+        this.level = newLevel;
+
+        SwingUtilities.invokeLater(() -> {
+            levelLabel.setText("当前关卡: " + newLevel);
+        });
+
+
+
+    }
 
     //javabean
 
