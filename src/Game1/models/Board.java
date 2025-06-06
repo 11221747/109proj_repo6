@@ -171,6 +171,8 @@ public class Board implements Serializable {
     //不同的关卡棋盘
     public void initialize_Board_1(){
         blocks = new ArrayList<>();
+        System.out.println(11);    //todo
+
         //布局1.横刀立马
         // Cao Cao (2x2)
         blocks.add(new Block(Block.BlockType.CAO_CAO, 1, 0, 2, 2));
@@ -264,8 +266,9 @@ public class Board implements Serializable {
         moves = 0;
     }
     public void reset(int level){
-        if (level == 1) initialize_Board_1();
-        else if (level == 2)initialize_Board_2();
+        if (level == 1) {
+            initialize_Board_1();
+        } else if (level == 2)initialize_Board_2();
         else if (level == 3) initialize_Board_3();
         else if (level == 4) initialize_Board_4();
 

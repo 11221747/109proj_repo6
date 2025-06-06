@@ -170,6 +170,7 @@ public class LoginFrame extends JFrame {
             usernameField.setText("");
             passwordField.setText("");
 
+            gameController.setLevel(1);
             setTimerMethod();
             openGameFrame();//开始游戏
             this.setLocationRelativeTo(null);

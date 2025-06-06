@@ -380,6 +380,8 @@ public class GameController  {
 
         // 原有逻辑保持不变...
         board.reset(level);
+
+        getGameframe().repaint();
         getBoard().setMoves(0);
         getBoard().clearHistory();
     }

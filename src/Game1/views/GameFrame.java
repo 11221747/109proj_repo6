@@ -45,7 +45,7 @@ public class GameFrame extends JFrame {
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Klotski Puzzle");
-        //todo:加个显示level的组件   在loadgames之后刷新关卡数
+
 
         setResizable(false);
         setSize(591, 550);//有点矮，如果把按钮移到左边就不矮了
